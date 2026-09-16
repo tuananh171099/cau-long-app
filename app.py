@@ -262,3 +262,38 @@ elif menu == "Quản lý thành viên":
                 st.session_state.members.pop(idx)
                 st.success(f"Đã xóa thành viên **{member}**!")
                 st.rerun()
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(page_title="CLB Cầu Lông", page_icon="🏸")
+st.title("🏸 Quản Lý Điểm Cầu Lông CLB")
+
+# --- KẾT NỐI GOOGLE SHEETS ---
+# Thay liên kết Google Sheets của bạn vào dòng dưới đây
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing/export?format=csv"
+
+@st.cache_data(ttl=5) # Tự động cập nhật dữ liệu mới mỗi 5 giây
+def load_data():
+    try:
+        # Đọc dữ liệu trực tiếp từ Google Sheets
+        df = pd.read_csv(SHEET_URL)
+        return df
+    except Exception as e:
+        st.error("Không thể kết nối đến Google Sheets. Vui lòng kiểm tra lại link chia sẻ!")
+        return pd.DataFrame()
+
+# Tải dữ liệu
+df = load_data()
+
+st.subheader("🏆 Bảng Xếp Hạng (Dữ liệu vĩnh viễn từ Google Sheets)")
+
+if not df.empty:
+    # Sắp xếp theo điểm giảm dần
+    df_sorted = df.sort_values(by="Điểm", ascending=False)
+    st.dataframe(df_sorted, use_container_width=True)
+else:
+    st.info("Chưa có dữ liệu hoặc đường link Google Sheets chưa đúng.")
+
+if st.button("🔄 Cập nhật dữ liệu mới"):
+    st.cache_data.clear()
+    st.rerun()

@@ -3,14 +3,10 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# Cấu hình trang
 st.set_page_config(page_title="Quản Lý CLB Cầu Lông", layout="wide")
 
-# ==========================================
-# CẤU HÌNH GOOGLE SHEETS & APP SCRIPT
-# ==========================================
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztcC8DCK-F2oRNzT8IYWwXzxlnsW-sgHYpP-UXwl0fEMkvijUZ34vZpol7EKeKceuSOg/exec"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4QXiNzVXTDLd9ltpCiMElur1F29Wi_xV6w5jMx-ZFlQ25nkvOdUI5OvpJU7469UHnjw/exec"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -53,21 +49,19 @@ members_list, matches_df = load_data()
 
 st.title("🏸 Quản Lý Điểm & Quỹ CLB Cầu Lông")
 
-# Thanh điều hướng (Sidebar)
 menu = st.sidebar.radio(
     "Điều hướng",
     [
         "Leaderboard & Quỹ",
         "Cập nhật trận đấu",
+        "Lịch sử & Quản lý trận",
         "Tìm kiếm thành viên",
         "Quản lý thành viên",
     ],
 )
 
 
-# ==========================================
-# 1. BẢNG XẾP HẠNG & QUỸ
-# ==========================================
+# 1. LEADERBOARD & QUỸ
 if menu == "Leaderboard & Quỹ":
     st.header("🏆 Bảng Xếp Hạng & Quỹ Thua Trận")
 
@@ -112,7 +106,6 @@ if menu == "Leaderboard & Quỹ":
                         stats[l]["Tổng Số Trận"] += 1
                         stats[l]["Ủng Hộ Quỹ (k)"] += 10
 
-            # Tính tỷ lệ thắng %
             for m in stats:
                 total = stats[m]["Tổng Số Trận"]
                 if total > 0:
@@ -122,42 +115,28 @@ if menu == "Leaderboard & Quỹ":
 
             df_lb = pd.DataFrame.from_dict(stats, orient="index").reset_index()
             df_lb.rename(columns={"index": "Tên Thành Viên"}, inplace=True)
-
-            # Sắp xếp theo Số trận thắng và Tỷ lệ thắng
             df_lb.sort_values(
                 by=["Thắng", "Tỷ Lệ Thắng (%)"],
                 ascending=[False, False],
                 inplace=True,
             )
 
-            # Đổi thứ tự các cột (chuyển Ủng Hộ Quỹ (k) lên vị trí thứ 4)
-            if not show_points:
-                column_order = [
-                    "Tên Thành Viên",
-                    "Thắng",
-                    "Thua",
-                    "Ủng Hộ Quỹ (k)",
-                    "Tổng Số Trận",
-                    "Tỷ Lệ Thắng (%)",
-                ]
-            else:
-                column_order = [
-                    "Tên Thành Viên",
-                    "Điểm",
-                    "Thắng",
-                    "Thua",
-                    "Ủng Hộ Quỹ (k)",
-                    "Tổng Số Trận",
-                    "Tỷ Lệ Thắng (%)",
-                ]
+            column_order = [
+                "Tên Thành Viên",
+                "Thắng",
+                "Thua",
+                "Ủng Hộ Quỹ (k)",
+                "Tổng Số Trận",
+                "Tỷ Lệ Thắng (%)",
+            ]
+            if show_points:
+                column_order.insert(1, "Điểm")
 
             df_lb = df_lb[column_order]
-
             df_lb.reset_index(drop=True, inplace=True)
             df_lb.index += 1
             return df_lb
 
-        # Xếp hạng Hôm nay
         with tab_today:
             today_str = date.today().strftime("%Y-%m-%d")
             df_today = matches_df[matches_df["Ngày"] == today_str]
@@ -167,7 +146,6 @@ if menu == "Leaderboard & Quỹ":
                 use_container_width=True,
             )
 
-        # Xếp hạng Theo Tháng
         with tab_month:
             col1, col2 = st.columns(2)
             with col1:
@@ -192,7 +170,6 @@ if menu == "Leaderboard & Quỹ":
                 & (df_temp["Ngày_dt"].dt.year == selected_year)
             ]
 
-            # Thống kê Tổng Quỹ Tháng & Tổng Số Trận Tháng
             df_lb_month = calculate_leaderboard(df_month, show_points=False)
             total_fund_month = df_lb_month["Ủng Hộ Quỹ (k)"].sum()
             total_matches_month = len(df_month)
@@ -211,7 +188,6 @@ if menu == "Leaderboard & Quỹ":
             )
             st.dataframe(df_lb_month, use_container_width=True)
 
-        # Xếp hạng Tất cả
         with tab_all:
             st.subheader("Bảng xếp hạng Toàn thời gian")
             st.dataframe(
@@ -219,10 +195,7 @@ if menu == "Leaderboard & Quỹ":
                 use_container_width=True,
             )
 
-
-# ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (ĐÁNH ĐÔI)
-# ==========================================
+# 2. CẬP NHẬT TRẬN ĐẤU
 elif menu == "Cập nhật trận đấu":
     st.header("📝 Ghi Nhận Kết Quả Trận Đấu (Đánh Đôi)")
 
@@ -231,7 +204,6 @@ elif menu == "Cập nhật trận đấu":
     else:
         with st.form("match_form"):
             match_date = st.date_input("Ngày thi đấu", value=date.today())
-
             col1, col2 = st.columns(2)
 
             with col1:
@@ -267,13 +239,9 @@ elif menu == "Cập nhật trận đấu":
             if submitted:
                 players = [p1, p2, p3, p4]
                 if len(set(players)) < 4:
-                    st.error(
-                        "Lỗi: Các VĐV trong trận đấu không được trùng nhau!"
-                    )
+                    st.error("Lỗi: Các VĐV không được trùng nhau!")
                 elif score1 == score2:
-                    st.error(
-                        "Lỗi: Kết quả trận đấu cầu lông không được hòa!"
-                    )
+                    st.error("Lỗi: Kết quả không được hòa!")
                 else:
                     winner = "Đội 1" if score1 > score2 else "Đội 2"
                     new_match = {
@@ -286,29 +254,48 @@ elif menu == "Cập nhật trận đấu":
                         "Điểm Đội 2": int(score2),
                         "Đội Thắng": winner,
                     }
-
-                    payload = {"action": "add_match", "match": new_match}
-                    requests.post(SCRIPT_URL, json=payload)
-                    st.success(
-                        f"Đã lưu trận đấu thành công! {winner} chiến thắng 🎉"
+                    requests.post(
+                        SCRIPT_URL,
+                        json={"action": "add_match", "match": new_match},
                     )
+                    st.success("Đã lưu trận đấu thành công! 🎉")
                     st.cache_data.clear()
                     st.rerun()
 
+# 3. LỊCH SỬ & QUẢN LÝ TRẬN (MỚI)
+elif menu == "Lịch sử & Quản lý trận":
+    st.header("🛠️ Quản Lý Tất Cả Trận Đấu")
 
-# ==========================================
-# 3. TÌM KIẾM THÀNH VIÊN
-# ==========================================
+    if matches_df.empty:
+        st.info("Chưa có trận đấu nào trong hệ thống.")
+    else:
+        st.write("Danh sách các trận đấu đã ghi nhận (bạn có thể xóa trận bị nhập sai):")
+        for idx, row in matches_df.iterrows():
+            col_info, col_del = st.columns([5, 1])
+            with col_info:
+                st.info(
+                    f"🗓️ **{row['Ngày']}** | 🔵 **{row['Đội 1 - VĐV 1']} / {row['Đội 1 - VĐV 2']}** ({row['Điểm Đội 1']}) VS 🔴 **{row['Đội 2 - VĐV 1']} / {row['Đội 2 - VĐV 2']}** ({row['Điểm Đội 2']}) ➔ **Thắng: {row['Đội Thắng']}**"
+                )
+            with col_del:
+                # Dòng 1 trên Google Sheet là Tiêu đề, nên chỉ số dòng cần + 2
+                sheet_row = idx + 2
+                if st.button("🗑️ Xóa", key=f"del_match_{idx}"):
+                    requests.post(
+                        SCRIPT_URL,
+                        json={"action": "delete_match", "row_index": sheet_row},
+                    )
+                    st.success("Đã xóa trận đấu thành công!")
+                    st.cache_data.clear()
+                    st.rerun()
+
+# 4. TÌM KIẾM THÀNH VIÊN
 elif menu == "Tìm kiếm thành viên":
     st.header("🔍 Lịch Sử Thi Đấu Của Thành Viên")
 
     if not members_list:
-        st.warning("Chưa có thành viên nào trong danh sách!")
+        st.warning("Chưa có thành viên nào!")
     else:
-        selected_member = st.selectbox(
-            "Chọn thành viên cần xem:", members_list
-        )
-
+        selected_member = st.selectbox("Chọn thành viên:", members_list)
         df_matches = matches_df.copy()
 
         filter_condition = (
@@ -327,8 +314,7 @@ elif menu == "Tìm kiếm thành viên":
         today_str = date.today().strftime("%Y-%m-%d")
         now = datetime.now()
 
-        win_today = lose_today = 0
-        win_month = lose_month = 0
+        win_today = lose_today = win_month = lose_month = 0
 
         if not user_matches.empty:
             user_matches["Ngày_dt"] = pd.to_datetime(user_matches["Ngày"])
@@ -357,91 +343,49 @@ elif menu == "Tìm kiếm thành viên":
                     else:
                         lose_month += 1
 
-        fine_today = lose_today * 10
-        fine_month = lose_month * 10
-
         st.subheader(f"📊 Báo cáo thành tích: **{selected_member}**")
         col_t, col_m = st.columns(2)
 
         with col_t:
             st.info(
-                f"**Hôm nay ({today_str}):**\n- Thắng: **{win_today}** trận |"
-                f" Thua: **{lose_today}** trận\n- Ủng hộ quỹ:"
-                f" **{fine_today}k VNĐ**"
+                f"**Hôm nay ({today_str}):**\n- Thắng: **{win_today}** | Thua:"
+                f" **{lose_today}**\n- Ủng hộ quỹ: **{lose_today*10}k VNĐ**"
             )
 
         with col_m:
             st.success(
                 f"**Tháng này ({now.month}/{now.year}):**\n- Thắng:"
-                f" **{win_month}** trận | Thua: **{lose_month}** trận\n- Ủng"
-                f" hộ quỹ: **{fine_month}k VNĐ**"
+                f" **{win_month}** | Thua: **{lose_month}**\n- Ủng hộ quỹ:"
+                f" **{lose_month*10}k VNĐ**"
             )
 
-        st.markdown("---")
-        st.subheader("📜 Danh sách các trận đấu đã tham gia")
-
-        if user_matches.empty:
-            st.write("Chưa tham gia trận đấu nào.")
-        else:
-            grouped = user_matches.groupby("Ngày", sort=False)
-
-            for match_date, group in grouped:
-                st.markdown(f"#### 🗓️ Ngày: {match_date}")
-
-                for _, row in group.iterrows():
-                    team1_str = (
-                        f"{row['Đội 1 - VĐV 1']} / {row['Đội 1 - VĐV 2']}"
-                    )
-                    team2_str = (
-                        f"{row['Đội 2 - VĐV 1']} / {row['Đội 2 - VĐV 2']}"
-                    )
-                    score_str = (
-                        f"{row['Điểm Đội 1']} - {row['Điểm Đội 2']}"
-                    )
-
-                    if row["Đội Thắng"] == "Đội 1":
-                        match_text = f"**{team1_str}** &nbsp; ` {score_str} ` &nbsp; {team2_str}"
-                    else:
-                        match_text = f"{team1_str} &nbsp; ` {score_str} ` &nbsp; **{team2_str}**"
-
-                    st.info(f"🏸 {match_text}")
-
-
-# ==========================================
-# 4. QUẢN LÝ THÀNH VIÊN (THÊM / XÓA)
-# ==========================================
+# 5. QUẢN LÝ THÀNH VIÊN
 elif menu == "Quản lý thành viên":
     st.header("⚙️ Quản Lý Danh Sách Thành Viên")
 
     with st.form("add_member_form", clear_on_submit=True):
-        new_name = st.text_input("Nhập họ và tên thành viên mới:")
+        new_name = st.text_input("Nhập tên thành viên mới:")
         add_btn = st.form_submit_button("➕ Thêm thành viên")
 
         if add_btn:
             name_clean = new_name.strip()
-            if name_clean == "":
-                st.warning("Vui lòng nhập tên thành viên!")
-            elif name_clean in members_list:
-                st.error("Thành viên này đã có trong danh sách!")
-            else:
-                payload = {"action": "add_member", "name": name_clean}
-                requests.post(SCRIPT_URL, json=payload)
-                st.success(f"Đã thêm thành viên **{name_clean}** thành công!")
+            if name_clean and name_clean not in members_list:
+                requests.post(
+                    SCRIPT_URL,
+                    json={"action": "add_member", "name": name_clean},
+                )
+                st.success(f"Đã thêm **{name_clean}**!")
                 st.cache_data.clear()
                 st.rerun()
 
-    st.subheader("📋 Danh sách thành viên hiện tại")
-
-    if not members_list:
-        st.info("Danh sách thành viên đang trống.")
-    else:
-        for idx, member in enumerate(members_list):
-            col_name, col_del = st.columns([4, 1])
-            col_name.write(f"**{idx + 1}. {member}**")
-
-            if col_del.button("🗑️ Xóa", key=f"del_{idx}"):
-                payload = {"action": "delete_member", "name": member}
-                requests.post(SCRIPT_URL, json=payload)
-                st.success(f"Đã xóa thành viên **{member}**!")
-                st.cache_data.clear()
-                st.rerun()
+    st.subheader("📋 Danh sách thành viên")
+    for idx, member in enumerate(members_list):
+        col_name, col_del = st.columns([4, 1])
+        col_name.write(f"**{idx + 1}. {member}**")
+        if col_del.button("🗑️ Xóa", key=f"del_{idx}"):
+            requests.post(
+                SCRIPT_URL, json={"action": "delete_member", "name": member}
+            )
+            st.success(f"Đã xóa **{member}**!")
+            st.cache_data.clear()
+            st.rerun()

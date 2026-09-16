@@ -84,9 +84,9 @@ if menu == "Leaderboard & Quỹ":
                     "Điểm": 0,
                     "Thắng": 0,
                     "Thua": 0,
+                    "Ủng Hộ Quỹ (k)": 0,
                     "Tổng Số Trận": 0,
                     "Tỷ Lệ Thắng (%)": 0.0,
-                    "Ủng Hộ Quỹ (k)": 0,
                 }
                 for m in members_list
             }
@@ -130,9 +130,28 @@ if menu == "Leaderboard & Quỹ":
                 inplace=True,
             )
 
-            # Bỏ cột Điểm nếu không yêu cầu hiển thị (cho xếp hạng Ngày & Tháng)
+            # Đổi thứ tự các cột (chuyển Ủng Hộ Quỹ (k) lên vị trí thứ 4)
             if not show_points:
-                df_lb.drop(columns=["Điểm"], inplace=True)
+                column_order = [
+                    "Tên Thành Viên",
+                    "Thắng",
+                    "Thua",
+                    "Ủng Hộ Quỹ (k)",
+                    "Tổng Số Trận",
+                    "Tỷ Lệ Thắng (%)",
+                ]
+            else:
+                column_order = [
+                    "Tên Thành Viên",
+                    "Điểm",
+                    "Thắng",
+                    "Thua",
+                    "Ủng Hộ Quỹ (k)",
+                    "Tổng Số Trận",
+                    "Tỷ Lệ Thắng (%)",
+                ]
+
+            df_lb = df_lb[column_order]
 
             df_lb.reset_index(drop=True, inplace=True)
             df_lb.index += 1

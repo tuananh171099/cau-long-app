@@ -1,74 +1,44 @@
 import streamlit as st
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(page_title="CLB Cầu Lông", page_icon="🏸")
-st.title("🏸 Quản Lý & Tính Điểm Cầu Lông CLB")
+st.title("🏸 Quản Lý Điểm Cầu Lông CLB")
 
-# Dán đường link Google Sheets của bạn vào đây:
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
+# --- KẾT NỐI GOOGLE SHEETS ---
+# Thay đường link Google Sheets của bạn vào giữa 2 dấu ngoặc kép ở dòng dưới:
+SHEET_URL = "THAY_LINK_GOOGLE_SHEET_CUA_BAN_VAO_DAY"
 
-# Kết nối Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+# Chuyển link Google Sheets sang dạng CSV đọc trực tiếp
+def get_csv_url(url):
+    if "/edit" in url:
+        return url.split("/edit")[0] + "/gviz/tq?tqx=out:csv"
+    return url
 
-def get_data():
-    return conn.read(spreadsheet=SHEET_URL, ttl="0s")
+@st.cache_data(ttl=5) # Cập nhật dữ liệu mới mỗi 5 giây
+def load_data():
+    try:
+        csv_url = get_csv_url(SHEET_URL)
+        df = pd.read_csv(csv_url)
+        return df
+    except Exception as e:
+        st.error("Chưa thể đọc dữ liệu. Vui lòng kiểm tra lại Link Google Sheets (Đã bật Chia sẻ cho mọi người xem chưa?)")
+        return pd.DataFrame()
 
-df = get_data()
+df = load_data()
 
-# --- KHU VỰC 1: BẢNG XẾP HẠNG ---
-st.subheader("🏆 Bảng Xếp Hạng")
-if not df.empty and "Điểm" in df.columns:
-    df_sorted = df.sort_values(by="Điểm", ascending=False)
-    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
-else:
-    st.info("Chưa có dữ liệu VĐV nào.")
+# --- HIỂN THỊ BẢNG XẾP HẠNG ---
+st.subheader("🏆 Bảng Xếp Hạng CLB")
 
-st.divider()
-
-# --- KHU VỰC 2: NHẬP DỮ LIỆU TRỰC TIẾP TRÊN WEB ---
-tab1, tab2 = st.tabs(["➕ Thêm VĐV Mới", "⚔️ Cập Nhật Kết Quả Trận Đấu"])
-
-# 1. Tab Thêm VĐV
-with tab1:
-    with st.form("add_player_form"):
-        new_name = st.text_input("Tên VĐV mới:")
-        submit_add = st.form_submit_button("Thêm VĐV")
-        
-        if submit_add and new_name:
-            if not df.empty and new_name in df["Tên VĐV"].values:
-                st.warning("VĐV này đã có trong danh sách!")
-            else:
-                new_row = pd.DataFrame([{"Tên VĐV": new_name, "Số trận": 0, "Thắng": 0, "Điểm": 0}])
-                updated_df = pd.concat([df, new_row], ignore_index=True)
-                conn.update(spreadsheet=SHEET_URL, data=updated_df)
-                st.success(f"Đã thêm VĐV: {new_name}")
-                st.rerun()
-
-# 2. Tab Cập nhật kết quả
-with tab2:
-    if not df.empty and len(df) >= 2:
-        with st.form("match_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                winner = st.selectbox("Người thắng (Cộng 3 điểm):", df["Tên VĐV"].tolist())
-            with col2:
-                loser = st.selectbox("Người thua (Cộng 1 điểm):", df[df["Tên VĐV"] != winner]["Tên VĐV"].tolist())
-            
-            submit_match = st.form_submit_button("Lưu kết quả trận đấu")
-            
-            if submit_match:
-                # Cập nhật người thắng (+1 trận, +1 thắng, +3 điểm)
-                df.loc[df["Tên VĐV"] == winner, "Số trận"] += 1
-                df.loc[df["Tên VĐV"] == winner, "Thắng"] += 1
-                df.loc[df["Tên VĐV"] == winner, "Điểm"] += 3
-                
-                # Cập nhật người thua (+1 trận, +1 điểm tham gia)
-                df.loc[df["Tên VĐV"] == loser, "Số trận"] += 1
-                df.loc[df["Tên VĐV"] == loser, "Điểm"] += 1
-                
-                conn.update(spreadsheet=SHEET_URL, data=df)
-                st.success(f"Đã lưu kết quả: {winner} thắng {loser}!")
-                st.rerun()
+if not df.empty:
+    # Nếu có cột Điểm thì sắp xếp theo điểm giảm dần
+    if "Điểm" in df.columns:
+        df_sorted = df.sort_values(by="Điểm", ascending=False)
+        st.dataframe(df_sorted, use_container_width=True, hide_index=True)
     else:
-        st.info("Cần ít nhất 2 VĐV trong danh sách để cập nhật trận đấu.")
+        st.dataframe(df, use_container_width=True, hide_index=True)
+else:
+    st.info("Chưa có dữ liệu VĐV. Hãy điền danh sách vào file Google Sheets!")
+
+if st.button("🔄 Cập nhật dữ liệu mới"):
+    st.cache_data.clear()
+    st.rerun()

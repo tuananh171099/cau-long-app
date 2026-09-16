@@ -78,9 +78,16 @@ if menu == "Leaderboard & Quỹ":
             ["Xếp hạng Hôm Nay", "Xếp hạng Theo Tháng", "Tổng Sắp Tất Cả"]
         )
 
-        def calculate_leaderboard(df_filtered):
+        def calculate_leaderboard(df_filtered, show_points=False):
             stats = {
-                m: {"Điểm": 0, "Thắng": 0, "Thua": 0, "Tiền Phạt (k)": 0}
+                m: {
+                    "Điểm": 0,
+                    "Thắng": 0,
+                    "Thua": 0,
+                    "Tổng Số Trận": 0,
+                    "Tỷ Lệ Thắng (%)": 0.0,
+                    "Ủng Hộ Quỹ (k)": 0,
+                }
                 for m in members_list
             }
 
@@ -97,17 +104,36 @@ if menu == "Leaderboard & Quỹ":
                     if w in stats:
                         stats[w]["Điểm"] += 3
                         stats[w]["Thắng"] += 1
+                        stats[w]["Tổng Số Trận"] += 1
 
                 for l in losers:
                     if l in stats:
                         stats[l]["Thua"] += 1
-                        stats[l]["Tiền Phạt (k)"] += 10
+                        stats[l]["Tổng Số Trận"] += 1
+                        stats[l]["Ủng Hộ Quỹ (k)"] += 10
+
+            # Tính tỷ lệ thắng %
+            for m in stats:
+                total = stats[m]["Tổng Số Trận"]
+                if total > 0:
+                    stats[m]["Tỷ Lệ Thắng (%)"] = round(
+                        (stats[m]["Thắng"] / total) * 100, 1
+                    )
 
             df_lb = pd.DataFrame.from_dict(stats, orient="index").reset_index()
             df_lb.rename(columns={"index": "Tên Thành Viên"}, inplace=True)
+
+            # Sắp xếp theo Số trận thắng và Tỷ lệ thắng
             df_lb.sort_values(
-                by=["Điểm", "Thắng"], ascending=[False, False], inplace=True
+                by=["Thắng", "Tỷ Lệ Thắng (%)"],
+                ascending=[False, False],
+                inplace=True,
             )
+
+            # Bỏ cột Điểm nếu không yêu cầu hiển thị (cho xếp hạng Ngày & Tháng)
+            if not show_points:
+                df_lb.drop(columns=["Điểm"], inplace=True)
+
             df_lb.reset_index(drop=True, inplace=True)
             df_lb.index += 1
             return df_lb
@@ -118,7 +144,8 @@ if menu == "Leaderboard & Quỹ":
             df_today = matches_df[matches_df["Ngày"] == today_str]
             st.subheader(f"Bảng xếp hạng ngày {today_str}")
             st.dataframe(
-                calculate_leaderboard(df_today), use_container_width=True
+                calculate_leaderboard(df_today, show_points=False),
+                use_container_width=True,
             )
 
         # Xếp hạng Theo Tháng
@@ -146,18 +173,31 @@ if menu == "Leaderboard & Quỹ":
                 & (df_temp["Ngày_dt"].dt.year == selected_year)
             ]
 
+            # Thống kê Tổng Quỹ Tháng & Tổng Số Trận Tháng
+            df_lb_month = calculate_leaderboard(df_month, show_points=False)
+            total_fund_month = df_lb_month["Ủng Hộ Quỹ (k)"].sum()
+            total_matches_month = len(df_month)
+
+            st.markdown("---")
+            metric_col1, metric_col2 = st.columns(2)
+            with metric_col1:
+                st.metric(
+                    "💰 Tổng Quỹ Tháng", f"{total_fund_month:.0f}k VNĐ"
+                )
+            with metric_col2:
+                st.metric("🏸 Tổng Số Trận Trong Tháng", total_matches_month)
+
             st.subheader(
                 f"Bảng xếp hạng Tháng {selected_month}/{selected_year}"
             )
-            st.dataframe(
-                calculate_leaderboard(df_month), use_container_width=True
-            )
+            st.dataframe(df_lb_month, use_container_width=True)
 
         # Xếp hạng Tất cả
         with tab_all:
             st.subheader("Bảng xếp hạng Toàn thời gian")
             st.dataframe(
-                calculate_leaderboard(matches_df), use_container_width=True
+                calculate_leaderboard(matches_df, show_points=True),
+                use_container_width=True,
             )
 
 
@@ -307,15 +347,15 @@ elif menu == "Tìm kiếm thành viên":
         with col_t:
             st.info(
                 f"**Hôm nay ({today_str}):**\n- Thắng: **{win_today}** trận |"
-                f" Thua: **{lose_today}** trận\n- Thua tổng tiền:"
+                f" Thua: **{lose_today}** trận\n- Ủng hộ quỹ:"
                 f" **{fine_today}k VNĐ**"
             )
 
         with col_m:
             st.success(
                 f"**Tháng này ({now.month}/{now.year}):**\n- Thắng:"
-                f" **{win_month}** trận | Thua: **{lose_month}** trận\n- Thua"
-                f" tổng tiền: **{fine_month}k VNĐ**"
+                f" **{win_month}** trận | Thua: **{lose_month}** trận\n- Ủng"
+                f" hộ quỹ: **{fine_month}k VNĐ**"
             )
 
         st.markdown("---")

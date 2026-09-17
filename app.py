@@ -80,7 +80,7 @@ st.markdown(
     }
     </style>
 """,
-    unsafe_allow_html=e_unsafe := True,
+    unsafe_allow_html=True,
 )
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
@@ -235,7 +235,6 @@ if menu == "🏆 Leaderboard & Quỹ":
             df_lb = df_lb[column_order]
             df_lb.reset_index(drop=True, inplace=True)
 
-            # Thêm Icon Huy Chương Top 1 2 3
             def add_medal(index):
                 if index == 0:
                     return "🥇 1"
@@ -297,7 +296,6 @@ if menu == "🏆 Leaderboard & Quỹ":
             total_fund_month = df_lb_month["Ủng Hộ Quỹ (k)"].sum()
             total_matches_month = len(df_month)
 
-            # Dashboard Cards Thống kê
             m1, m2 = st.columns(2)
             with m1:
                 st.markdown(
@@ -449,7 +447,6 @@ elif menu == "🛠️ Lịch sử & Quản lý trận":
             score1 = row["Điểm Đội 1"]
             score2 = row["Điểm Đội 2"]
 
-            # Highlight Đội thắng bằng cách in đậm
             if row["Đội Thắng"] == "Đội 1":
                 match_display = f"🔥 **{team1_str} {score1}** - {score2} {team2_str}"
             else:

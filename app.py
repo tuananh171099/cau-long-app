@@ -1,5 +1,4 @@
 from datetime import date, datetime
-import re
 import time
 import pandas as pd
 import requests
@@ -119,7 +118,7 @@ st.markdown(
 )
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx56axOdpQ-pRGzV1UWbaE3t88ATfMdWeVY_VZCJ6WKv_mtM_7DOJYZ0jMlyctJ-cGqPg/exec"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz188X3eDxLYFBakFxlGo3QEdHNMMpc8EhoLYyiBANPKonjI7wd4loCE0ywqBKluVJgrw/exec"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -134,9 +133,7 @@ def load_data():
     try:
         url_members = get_sheet_csv_url(SHEET_URL, "Members")
         df_m = pd.read_csv(url_members)
-        members = (
-            df_m["Tên Thành Viên"].dropna().astype(str).str.strip().tolist()
-        )
+        members = df_m["Tên Thành Viên"].dropna().astype(str).str.strip().tolist()
     except Exception:
         members = ["Nguyễn Văn A", "Trần Văn B", "Lê Thị C", "Phạm Văn D"]
 
@@ -146,10 +143,16 @@ def load_data():
     except Exception:
         df_matches = pd.DataFrame()
 
-    return members, df_matches
+    try:
+        url_seasons = get_sheet_csv_url(SHEET_URL, "Seasons")
+        df_seasons = pd.read_csv(url_seasons)
+    except Exception:
+        df_seasons = pd.DataFrame(columns=["Tên Mùa", "Ngày Bắt Đầu", "Ngày Kết Thúc", "Trạng Thái"])
+
+    return members, df_matches, df_seasons
 
 
-members_list, matches_df = load_data()
+members_list, matches_df, seasons_df = load_data()
 
 
 def to_int(val, default=0):
@@ -185,30 +188,26 @@ def parse_match_row(row):
 
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
     video_url = str(get_val(row, "Video", 12, "")).strip()
+    season_name = str(get_val(row, "Mùa Giải", 13, "")).strip()
 
     if not winner:
         winner = "Đội 1" if score1 > score2 else "Đội 2"
 
     return {
         "date": match_date,
-        "p1_1": p1_1,
-        "k1_1": k1_1,
-        "p1_2": p1_2,
-        "k1_2": k1_2,
+        "p1_1": p1_1, "k1_1": k1_1,
+        "p1_2": p1_2, "k1_2": k1_2,
         "score1": score1,
-        "p2_1": p2_1,
-        "k2_1": k2_1,
-        "p2_2": p2_2,
-        "k2_2": k2_2,
+        "p2_1": p2_1, "k2_1": k2_1,
+        "p2_2": p2_2, "k2_2": k2_2,
         "score2": score2,
         "winner": winner,
         "video_url": video_url,
+        "season": season_name
     }
 
 
-def render_scoreboard_html(
-    team1_str, score1, team2_str, score2, is_team1_winner
-):
+def render_scoreboard_html(team1_str, score1, team2_str, score2, is_team1_winner):
     row1_class = "winner-row" if is_team1_winner else ""
     row2_class = "" if is_team1_winner else "winner-row"
 
@@ -232,36 +231,6 @@ def render_scoreboard_html(
     """
 
 
-# Hàm phát video YouTube chuẩn mượt không bị vướng controls
-def render_youtube_player(url):
-    video_id = None
-    # Trích xuất Video ID từ link YouTube
-    patterns = [
-        r"(?:v=|\/)([0-9A-Za-z_-]{11}).*",
-        r"youtu\.be\/([0-9A-Za-z_-]{11})",
-        r"embed\/([0-9A-Za-z_-]{11})",
-    ]
-    for p in patterns:
-        match = re.search(p, url)
-        if match:
-            video_id = match.group(1)
-            break
-
-    if video_id:
-        embed_html = f"""
-        <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin-top: 10px; margin-bottom: 10px;">
-            <iframe src="https://www.youtube.com/embed/{video_id}?rel=0&modestbranding=1" 
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-            </iframe>
-        </div>
-        """
-        st.markdown(embed_html, unsafe_allow_html=True)
-    else:
-        st.video(url)
-
-
 # Header
 st.markdown(
     """
@@ -277,9 +246,7 @@ st.markdown(
 )
 
 with st.sidebar:
-    st.image(
-        "https://cdn-icons-png.flaticon.com/512/2906/2906206.png", width=80
-    )
+    st.image("https://cdn-icons-png.flaticon.com/512/2906/2906206.png", width=80)
     st.title("Menu")
     menu = st.radio(
         "Chọn chức năng:",
@@ -299,20 +266,69 @@ with st.sidebar:
 # 1. BẢNG XẾP HẠNG
 # ==========================================
 if menu == "🏆 Bảng Xếp Hạng":
-    st.subheader("🏆 Bảng Xếp Hạng")
+    st.subheader("🏆 Bảng Xếp Hạng Theo Mùa Giải")
 
-    if matches_df.empty:
-        st.info(
-            "💡 Chưa có dữ liệu trận đấu nào. Hãy vào phần 'Cập nhật trận đấu' để"
-            " ghi nhận trận đầu tiên!"
-        )
+    # Xử lý danh sách Mùa Giải
+    seasons_list = seasons_df["Tên Mùa"].dropna().tolist() if not seasons_df.empty else ["Mùa 1 (2026)"]
+    active_season = seasons_list[-1] if seasons_list else "Mùa 1 (2026)"
+
+    c_season, c_manage = st.columns([2, 1])
+    with c_season:
+        selected_season = st.selectbox("🏆 เลือก Mùa Giải muốn xem xếp hạng:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0)
+
+    with c_manage:
+        st.write("")
+        st.write("")
+        with st.popover("⚙️ Quản Lý / Tạo Mùa Giải"):
+            st.markdown("### ➕ Tạo Mùa Giải Mới")
+            with st.form("add_season_form"):
+                new_s_name = st.text_input("Tên Mùa Giải Mới:", value=f"Mùa {len(seasons_list)+1} (2026)")
+                s_start_date = st.date_input("🗓️ Ngày Bắt Đầu Mùa", value=date.today())
+                create_s_btn = st.form_submit_button("🚀 Khởi Tranh Mùa Mới", use_container_width=True)
+
+                if create_s_btn:
+                    if new_s_name.strip() in seasons_list:
+                        st.error("❌ Tên mùa giải này đã tồn tại!")
+                    else:
+                        requests.post(
+                            SCRIPT_URL,
+                            json={
+                                "action": "add_season",
+                                "season_name": new_s_name.strip(),
+                                "start_date": s_start_date.strftime("%Y-%m-%d")
+                            }
+                        )
+                        st.toast(f"Đã bắt đầu {new_s_name.strip()}!", icon="🎉")
+                        st.cache_data.clear()
+                        st.rerun()
+
+            st.markdown("---")
+            st.markdown("### 🛑 Kết Thúc Mùa Hiện Tại")
+            if st.button(f"Kết thúc {active_season}", use_container_width=True):
+                requests.post(
+                    SCRIPT_URL,
+                    json={
+                        "action": "end_season",
+                        "season_name": active_season,
+                        "end_date": date.today().strftime("%Y-%m-%d")
+                    }
+                )
+                st.toast(f"Đã kết thúc {active_season}!", icon="✅")
+                st.cache_data.clear()
+                st.rerun()
+
+    # Lọc danh sách trận theo mùa đã chọn
+    df_season_matches = pd.DataFrame()
+    if not matches_df.empty:
+        df_season_matches = matches_df[
+            matches_df.apply(lambda r: parse_match_row(r)["season"] == selected_season, axis=1)
+        ]
+
+    if df_season_matches.empty:
+        st.info(f"💡 Chưa có trận đấu nào trong `{selected_season}`.")
     else:
         tab_day, tab_month, tab_all = st.tabs(
-            [
-                "📅 Xếp hạng Theo Ngày",
-                "📆 Xếp hạng Theo Tháng",
-                "🌟 Tổng Sắp Tất Cả",
-            ]
+            ["📅 Xếp hạng Theo Ngày", "📆 Xếp hạng Theo Tháng", "🌟 Bảng Xếp Hạng Mùa"]
         )
 
         def calculate_leaderboard(df_filtered, show_points=False):
@@ -330,23 +346,14 @@ if menu == "🏆 Bảng Xếp Hạng":
 
             for _, row in df_filtered.iterrows():
                 m_info = parse_match_row(row)
-
-                is_team1_win = (m_info["winner"] == "Đội 1") or (
-                    m_info["score1"] > m_info["score2"]
-                )
+                is_team1_win = (m_info["winner"] == "Đội 1") or (m_info["score1"] > m_info["score2"])
 
                 if is_team1_win:
                     winners = [m_info["p1_1"], m_info["p1_2"]]
-                    losers = [
-                        (m_info["p2_1"], m_info["k2_1"]),
-                        (m_info["p2_2"], m_info["k2_2"]),
-                    ]
+                    losers = [(m_info["p2_1"], m_info["k2_1"]), (m_info["p2_2"], m_info["k2_2"])]
                 else:
                     winners = [m_info["p2_1"], m_info["p2_2"]]
-                    losers = [
-                        (m_info["p1_1"], m_info["k1_1"]),
-                        (m_info["p1_2"], m_info["k1_2"]),
-                    ]
+                    losers = [(m_info["p1_1"], m_info["k1_1"]), (m_info["p1_2"], m_info["k1_2"])]
 
                 for w in winners:
                     if w in stats:
@@ -363,17 +370,11 @@ if menu == "🏆 Bảng Xếp Hạng":
             for m in stats:
                 total = stats[m]["Tổng Số Trận"]
                 if total > 0:
-                    stats[m]["Tỷ Lệ Thắng (%)"] = round(
-                        (stats[m]["Thắng"] / total) * 100, 1
-                    )
+                    stats[m]["Tỷ Lệ Thắng (%)"] = round((stats[m]["Thắng"] / total) * 100, 1)
 
             df_lb = pd.DataFrame.from_dict(stats, orient="index").reset_index()
             df_lb.rename(columns={"index": "Tên Thành Viên"}, inplace=True)
-            df_lb.sort_values(
-                by=["Thắng", "Tỷ Lệ Thắng (%)"],
-                ascending=[False, False],
-                inplace=True,
-            )
+            df_lb.sort_values(by=["Thắng", "Tỷ Lệ Thắng (%)"], ascending=[False, False], inplace=True)
 
             column_order = [
                 "Tên Thành Viên",
@@ -405,27 +406,16 @@ if menu == "🏆 Bảng Xếp Hạng":
         with tab_day:
             c_date, _ = st.columns([1, 2])
             with c_date:
-                selected_date = st.date_input(
-                    "📅 Chọn ngày muốn xem xếp hạng:", value=date.today()
-                )
+                selected_date = st.date_input("📅 Chọn ngày muốn xem xếp hạng:", value=date.today())
 
             selected_date_str = selected_date.strftime("%Y-%m-%d")
 
-            df_day = pd.DataFrame()
-            if not matches_df.empty:
-                df_day = matches_df[
-                    matches_df.apply(
-                        lambda r: parse_match_row(r)["date"]
-                        == selected_date_str,
-                        axis=1,
-                    )
-                ]
+            df_day = df_season_matches[
+                df_season_matches.apply(lambda r: parse_match_row(r)["date"] == selected_date_str, axis=1)
+            ]
 
             if df_day.empty:
-                st.info(
-                    "💡 Không có trận đấu nào diễn ra trong ngày"
-                    f" `{selected_date_str}`."
-                )
+                st.info(f"💡 Không có trận đấu nào trong ngày `{selected_date_str}` của mùa `{selected_season}`.")
             else:
                 df_lb_day = calculate_leaderboard(df_day, show_points=False)
                 total_fund_day = df_lb_day["Điểm thành viên"].sum()
@@ -459,10 +449,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     use_container_width=True,
                     column_config={
                         "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                            "Tỷ Lệ Thắng (%)",
-                            format="%.1f%%",
-                            min_value=0,
-                            max_value=100,
+                            "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
                         ),
                         "Điểm thành viên": st.column_config.NumberColumn(
                             "Điểm thành viên", format="%d"
@@ -474,35 +461,19 @@ if menu == "🏆 Bảng Xếp Hạng":
         with tab_month:
             c1, c2 = st.columns(2)
             with c1:
-                selected_year = st.number_input(
-                    "Chọn Năm",
-                    min_value=2024,
-                    max_value=2030,
-                    value=datetime.now().year,
-                )
+                selected_year = st.number_input("Chọn Năm", min_value=2024, max_value=2030, value=datetime.now().year)
             with c2:
-                selected_month = st.number_input(
-                    "Chọn Tháng",
-                    min_value=1,
-                    max_value=12,
-                    value=datetime.now().month,
-                )
+                selected_month = st.number_input("Chọn Tháng", min_value=1, max_value=12, value=datetime.now().month)
 
-            df_month = pd.DataFrame()
-            if not matches_df.empty:
+            def is_in_month(row):
+                d_str = parse_match_row(row)["date"]
+                try:
+                    dt = datetime.strptime(d_str, "%Y-%m-%d")
+                    return dt.month == selected_month and dt.year == selected_year
+                except Exception:
+                    return False
 
-                def is_in_month(row):
-                    d_str = parse_match_row(row)["date"]
-                    try:
-                        dt = datetime.strptime(d_str, "%Y-%m-%d")
-                        return (
-                            dt.month == selected_month
-                            and dt.year == selected_year
-                        )
-                    except Exception:
-                        return False
-
-                df_month = matches_df[matches_df.apply(is_in_month, axis=1)]
+            df_month = df_season_matches[df_season_matches.apply(is_in_month, axis=1)]
 
             df_lb_month = calculate_leaderboard(df_month, show_points=False)
             total_fund_month = df_lb_month["Điểm thành viên"].sum()
@@ -544,11 +515,11 @@ if menu == "🏆 Bảng Xếp Hạng":
                 },
             )
 
-        # Tab All
+        # Tab Toàn mùa
         with tab_all:
-            st.write("**Bảng xếp hạng cộng dồn toàn thời gian**")
+            st.write(f"**Bảng xếp hạng tổng quát của `{selected_season}`**")
             st.dataframe(
-                calculate_leaderboard(matches_df, show_points=True),
+                calculate_leaderboard(df_season_matches, show_points=True),
                 use_container_width=True,
                 column_config={
                     "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
@@ -564,123 +535,61 @@ if menu == "🏆 Bảng Xếp Hạng":
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới (Đánh Đôi)")
 
+    seasons_list = seasons_df["Tên Mùa"].dropna().tolist() if not seasons_df.empty else ["Mùa 1 (2026)"]
+    current_season = seasons_list[-1] if seasons_list else "Mùa 1 (2026)"
+
     if len(members_list) < 4:
-        st.warning(
-            "⚠️ Cần tối thiểu 4 VĐV trong danh sách để tổ chức trận đánh đôi!"
-        )
+        st.warning("⚠️ Cần tối thiểu 4 VĐV trong danh sách để tổ chức trận đánh đôi!")
     else:
+        st.info(f"🏆 Trận đấu này sẽ được tính vào: **{current_season}**")
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today())
 
             col1, col2 = st.columns(2)
 
             with col1:
-                st.markdown(
-                    "<div class='team-card-1'><b>🔵 ĐỘI 1</b></div>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div class='team-card-1'><b>🔵 ĐỘI 1</b></div>", unsafe_allow_html=True)
                 cp1_name, cp1_bet = st.columns([2.5, 1])
                 with cp1_name:
                     p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
                 with cp1_bet:
-                    k1_1 = st.number_input(
-                        "Điểm",
-                        min_value=0,
-                        max_value=10,
-                        value=1,
-                        step=1,
-                        key="k1_1",
-                    )
+                    k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
 
                 cp2_name, cp2_bet = st.columns([2.5, 1])
                 with cp2_name:
-                    p2 = st.selectbox(
-                        "VĐV 2",
-                        members_list,
-                        index=min(1, len(members_list) - 1),
-                        key="p2",
-                    )
+                    p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
                 with cp2_bet:
-                    k1_2 = st.number_input(
-                        "Điểm",
-                        min_value=0,
-                        max_value=10,
-                        value=1,
-                        step=1,
-                        key="k1_2",
-                    )
+                    k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
 
-                score1 = st.number_input(
-                    "Điểm Số Đội 1", min_value=0, max_value=30, value=21
-                )
+                score1 = st.number_input("Điểm Số Đội 1", min_value=0, max_value=30, value=21)
 
             with col2:
-                st.markdown(
-                    "<div class='team-card-2'><b>🔴 ĐỘI 2</b></div>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown("<div class='team-card-2'><b>🔴 ĐỘI 2</b></div>", unsafe_allow_html=True)
                 cp3_name, cp3_bet = st.columns([2.5, 1])
                 with cp3_name:
-                    p3 = st.selectbox(
-                        "VĐV 1",
-                        members_list,
-                        index=min(2, len(members_list) - 1),
-                        key="p3",
-                    )
+                    p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
                 with cp3_bet:
-                    k2_1 = st.number_input(
-                        "Điểm",
-                        min_value=0,
-                        max_value=10,
-                        value=1,
-                        step=1,
-                        key="k2_1",
-                    )
+                    k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
 
                 cp4_name, cp4_bet = st.columns([2.5, 1])
                 with cp4_name:
-                    p4 = st.selectbox(
-                        "VĐV 2",
-                        members_list,
-                        index=min(3, len(members_list) - 1),
-                        key="p4",
-                    )
+                    p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
                 with cp4_bet:
-                    k2_2 = st.number_input(
-                        "Điểm",
-                        min_value=0,
-                        max_value=10,
-                        value=1,
-                        step=1,
-                        key="k2_2",
-                    )
+                    k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
 
-                score2 = st.number_input(
-                    "Điểm Số Đội 2", min_value=0, max_value=30, value=19
-                )
+                score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19)
 
-            video_input = st.text_input(
-                "🎥 Link Video YouTube Trận Đấu (Không bắt buộc):",
-                placeholder="https://www.youtube.com/watch?v=...",
-            )
+            video_input = st.text_input("🎥 Link Video YouTube Trận Đấu (Không bắt buộc):", placeholder="https://www.youtube.com/watch?v=...")
 
             st.write("")
-            submitted = st.form_submit_button(
-                "💾 LƯU KẾT QUẢ TRẬN ĐẤU", use_container_width=True
-            )
+            submitted = st.form_submit_button("💾 LƯU KẾT QUẢ TRẬN ĐẤU", use_container_width=True)
 
             if submitted:
                 players = [p1, p2, p3, p4]
                 if len(set(players)) < 4:
-                    st.error(
-                        "❌ Lỗi: Có VĐV bị chọn trùng tên! Vui lòng chọn 4 VĐV"
-                        " khác nhau."
-                    )
+                    st.error("❌ Lỗi: Có VĐV bị chọn trùng tên! Vui lòng chọn 4 VĐV khác nhau.")
                 elif score1 == score2:
-                    st.error(
-                        "❌ Lỗi: Điểm số hai đội không được bằng nhau (Không"
-                        " có tỉ số hòa)."
-                    )
+                    st.error("❌ Lỗi: Điểm số hai đội không được bằng nhau (Không có tỉ số hòa).")
                 else:
                     winner = "Đội 1" if int(score1) > int(score2) else "Đội 2"
                     new_match = {
@@ -697,16 +606,14 @@ elif menu == "📝 Cập nhật trận đấu":
                         "Điểm Đội 2": int(score2),
                         "Đội Thắng": winner,
                         "Video": video_input.strip(),
+                        "Mùa Giải": current_season
                     }
-                    requests.post(
-                        SCRIPT_URL,
-                        json={"action": "add_match", "match": new_match},
-                    )
-
+                    requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
+                    
                     st.balloons()
                     st.success(
-                        "✅ **ĐÃ LƯU TRẬN ĐẤU THÀNH CÔNG!**\n\n🏆 **Đội"
-                        f" thắng:** {winner} ({score1} - {score2})"
+                        f"✅ **ĐÃ LƯU TRẬN ĐẤU THÀNH CÔNG!**\n\n"
+                        f"🏆 **Đội thắng:** {winner} ({score1} - {score2})"
                     )
                     time.sleep(2.5)
                     st.cache_data.clear()
@@ -738,58 +645,44 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                 team1_str = f"{m['p1_1']} / {m['p1_2']}"
                 team2_str = f"{m['p2_1']} / {m['p2_2']}"
 
-                is_team1_winner = (m["winner"] == "Đội 1") or (
-                    m["score1"] > m["score2"]
-                )
+                is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
 
                 col_info, col_del = st.columns([6, 1])
 
                 with col_info:
                     st.markdown(
                         render_scoreboard_html(
-                            team1_str,
-                            m["score1"],
-                            team2_str,
-                            m["score2"],
-                            is_team1_winner,
+                            team1_str, m['score1'], team2_str, m['score2'], is_team1_winner
                         ),
                         unsafe_allow_html=True,
                     )
                     with st.expander("🔍 Chi tiết trận đấu & Video YouTube"):
                         st.write(
-                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`)"
-                            f" | {m['p1_2']} (`{m['k1_2']} điểm`)\n• **Đội"
-                            f" 2:** {m['p2_1']} (`{m['k2_1']} điểm`) |"
-                            f" {m['p2_2']} (`{m['k2_2']} điểm`)"
+                            f"• **Mùa giải:** `{m['season']}`\n"
+                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`) | {m['p1_2']} (`{m['k1_2']} điểm`)\n"
+                            f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']} điểm`) | {m['p2_2']} (`{m['k2_2']} điểm`)"
                         )
 
-                        # Hiển thị Video phát chuẩn YouTube
                         if m["video_url"]:
                             st.write("🎬 **Video trận đấu:**")
-                            render_youtube_player(m["video_url"])
+                            try:
+                                st.video(m["video_url"])
+                            except Exception:
+                                st.warning("🔗 Link video không khả thi.")
 
-                        # Form chỉnh sửa link video
                         with st.form(f"form_vid_{m['row_index']}"):
-                            v_link = st.text_input(
-                                "🔗 Chỉnh sửa / Điền link YouTube:",
-                                value=m["video_url"],
-                                key=f"v_in_{m['row_index']}",
-                            )
-                            save_v_btn = st.form_submit_button(
-                                "💾 Lưu Video Trận Đấu"
-                            )
+                            v_link = st.text_input("🔗 Chỉnh sửa / Điền link YouTube:", value=m["video_url"], key=f"v_in_{m['row_index']}")
+                            save_v_btn = st.form_submit_button("💾 Lưu Video Trận Đấu")
                             if save_v_btn:
                                 requests.post(
                                     SCRIPT_URL,
                                     json={
                                         "action": "update_video",
                                         "row_index": m["row_index"],
-                                        "video_url": v_link.strip(),
-                                    },
+                                        "video_url": v_link.strip()
+                                    }
                                 )
-                                st.toast(
-                                    "Đã lưu link Video thành công!", icon="✅"
-                                )
+                                st.toast("Đã lưu link Video thành công!", icon="✅")
                                 st.cache_data.clear()
                                 st.rerun()
 
@@ -797,10 +690,7 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                     if st.button("🗑️ Xóa", key=f"del_match_{m['row_index']}"):
                         requests.post(
                             SCRIPT_URL,
-                            json={
-                                "action": "delete_match",
-                                "row_index": m["row_index"],
-                            },
+                            json={"action": "delete_match", "row_index": m['row_index']},
                         )
                         st.toast("Đã xóa trận đấu thành công!", icon="✅")
                         st.cache_data.clear()
@@ -816,20 +706,13 @@ elif menu == "🔍 Tìm kiếm thành viên":
     if not members_list:
         st.warning("Chưa có VĐV nào!")
     else:
-        selected_member = st.selectbox(
-            "🔎 Chọn VĐV muốn tra cứu:", members_list
-        )
+        selected_member = st.selectbox("🔎 Chọn VĐV muốn tra cứu:", members_list)
 
         user_matches = []
         if not matches_df.empty:
             for idx, row in matches_df.iterrows():
                 m = parse_match_row(row)
-                if selected_member in [
-                    m["p1_1"],
-                    m["p1_2"],
-                    m["p2_1"],
-                    m["p2_2"],
-                ]:
+                if selected_member in [m["p1_1"], m["p1_2"], m["p2_1"], m["p2_2"]]:
                     user_matches.append(m)
 
         today_str = date.today().strftime("%Y-%m-%d")
@@ -840,11 +723,8 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
         for m in user_matches:
             is_team1 = selected_member in [m["p1_1"], m["p1_2"]]
-            is_winner = (
-                is_team1 and (m["winner"] == "Đội 1" or m["score1"] > m["score2"])
-            ) or (
-                not is_team1
-                and (m["winner"] == "Đội 2" or m["score2"] > m["score1"])
+            is_winner = (is_team1 and (m["winner"] == "Đội 1" or m["score1"] > m["score2"])) or (
+                not is_team1 and (m["winner"] == "Đội 2" or m["score2"] > m["score1"])
             )
 
             bet_amount = 1
@@ -922,30 +802,26 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     team1_str = f"{m['p1_1']} / {m['p1_2']}"
                     team2_str = f"{m['p2_1']} / {m['p2_2']}"
 
-                    is_team1_winner = (m["winner"] == "Đội 1") or (
-                        m["score1"] > m["score2"]
-                    )
+                    is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
 
                     st.markdown(
                         render_scoreboard_html(
-                            team1_str,
-                            m["score1"],
-                            team2_str,
-                            m["score2"],
-                            is_team1_winner,
+                            team1_str, m['score1'], team2_str, m['score2'], is_team1_winner
                         ),
                         unsafe_allow_html=True,
                     )
                     with st.expander("🔍 Chi tiết trận đấu & Video"):
                         st.write(
-                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`)"
-                            f" | {m['p1_2']} (`{m['k1_2']} điểm`)\n• **Đội"
-                            f" 2:** {m['p2_1']} (`{m['k2_1']} điểm`) |"
-                            f" {m['p2_2']} (`{m['k2_2']} điểm`)"
+                            f"• **Mùa giải:** `{m['season']}`\n"
+                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`) | {m['p1_2']} (`{m['k1_2']} điểm`)\n"
+                            f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']} điểm`) | {m['p2_2']} (`{m['k2_2']} điểm`)"
                         )
                         if m["video_url"]:
                             st.write("🎬 **Video trận đấu:**")
-                            render_youtube_player(m["video_url"])
+                            try:
+                                st.video(m["video_url"])
+                            except Exception:
+                                st.warning("🔗 Link video không khả thi.")
 
 
 # ==========================================
@@ -960,9 +836,7 @@ elif menu == "⚙️ Quản lý thành viên":
         st.write("### ➕ Thêm VĐV Mới")
         with st.form("add_member_form", clear_on_submit=True):
             new_name = st.text_input("Họ và Tên VĐV:")
-            add_btn = st.form_submit_button(
-                "Thêm mới", use_container_width=True
-            )
+            add_btn = st.form_submit_button("Thêm mới", use_container_width=True)
 
             if add_btn:
                 name_clean = new_name.strip()

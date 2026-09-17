@@ -118,7 +118,7 @@ st.markdown(
 )
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwcSVOt22jq_vA8Amg5r4uKiY26WcmYhisq7gqH9wj6bpbOCfyZ8fAlT8f_WfjFuDiTaw/exec"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx56axOdpQ-pRGzV1UWbaE3t88ATfMdWeVY_VZCJ6WKv_mtM_7DOJYZ0jMlyctJ-cGqPg/exec"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -181,6 +181,8 @@ def parse_match_row(row):
     score2 = to_int(get_val(row, "Điểm Đội 2", 10, 0), 0)
 
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
+    video_url = str(get_val(row, "Video", 12, "")).strip()
+
     if not winner:
         winner = "Đội 1" if score1 > score2 else "Đội 2"
 
@@ -192,7 +194,8 @@ def parse_match_row(row):
         "p2_1": p2_1, "k2_1": k2_1,
         "p2_2": p2_2, "k2_2": k2_2,
         "score2": score2,
-        "winner": winner
+        "winner": winner,
+        "video_url": video_url
     }
 
 
@@ -513,6 +516,8 @@ elif menu == "📝 Cập nhật trận đấu":
 
                 score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19)
 
+            video_input = st.text_input("🎥 Link Video YouTube Trận Đấu (Không bắt buộc):", placeholder="https://www.youtube.com/watch?v=...")
+
             st.write("")
             submitted = st.form_submit_button("💾 LƯU KẾT QUẢ TRẬN ĐẤU", use_container_width=True)
 
@@ -537,6 +542,7 @@ elif menu == "📝 Cập nhật trận đấu":
                         "Kèo 2_2": int(k2_2),
                         "Điểm Đội 2": int(score2),
                         "Đội Thắng": winner,
+                        "Video": video_input.strip()
                     }
                     requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
                     
@@ -586,11 +592,36 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                         ),
                         unsafe_allow_html=True,
                     )
-                    with st.expander("🔍 Xem chi tiết điểm trận này"):
+                    with st.expander("🔍 Chi tiết trận đấu & Video YouTube"):
                         st.write(
                             f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`) | {m['p1_2']} (`{m['k1_2']} điểm`)\n"
                             f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']} điểm`) | {m['p2_2']} (`{m['k2_2']} điểm`)"
                         )
+
+                        # Hiển thị/Cập nhật Video
+                        if m["video_url"]:
+                            st.write("🎬 **Video trận đấu:**")
+                            try:
+                                st.video(m["video_url"])
+                            except Exception:
+                                st.warning("🔗 Link video không khả thi hoặc bị lỗi.")
+
+                        # Form chỉnh sửa link video
+                        with st.form(f"form_vid_{m['row_index']}"):
+                            v_link = st.text_input("🔗 Chỉnh sửa / Điền link YouTube:", value=m["video_url"], key=f"v_in_{m['row_index']}")
+                            save_v_btn = st.form_submit_button("💾 Lưu Video Trận Đấu")
+                            if save_v_btn:
+                                requests.post(
+                                    SCRIPT_URL,
+                                    json={
+                                        "action": "update_video",
+                                        "row_index": m["row_index"],
+                                        "video_url": v_link.strip()
+                                    }
+                                )
+                                st.toast("Đã lưu link Video thành công!", icon="✅")
+                                st.cache_data.clear()
+                                st.rerun()
 
                 with col_del:
                     if st.button("🗑️ Xóa", key=f"del_match_{m['row_index']}"):
@@ -716,11 +747,17 @@ elif menu == "🔍 Tìm kiếm thành viên":
                         ),
                         unsafe_allow_html=True,
                     )
-                    with st.expander("🔍 Xem chi tiết điểm trận này"):
+                    with st.expander("🔍 Chi tiết trận đấu & Video"):
                         st.write(
                             f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`) | {m['p1_2']} (`{m['k1_2']} điểm`)\n"
                             f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']} điểm`) | {m['p2_2']} (`{m['k2_2']} điểm`)"
                         )
+                        if m["video_url"]:
+                            st.write("🎬 **Video trận đấu:**")
+                            try:
+                                st.video(m["video_url"])
+                            except Exception:
+                                st.warning("🔗 Link video không khả thi.")
 
 
 # ==========================================

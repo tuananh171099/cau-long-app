@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu chống tràn màn hình & căn chỉnh giao diện chuẩn Mobile
+# CSS Tối ưu căn lề & co giãn chuẩn Mobile theo đúng vị trí khoanh đỏ
 st.markdown(
     """
     <style>
@@ -31,8 +31,8 @@ st.markdown(
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: flex-start !important;
-        gap: 6px !important;
+        align-items: flex-end !important;
+        gap: 4px !important;
         width: 100% !important;
     }
 
@@ -669,7 +669,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
             st.write("")
             st.dataframe(
-                df_lb_month,
+                df_month,
                 use_container_width=True,
                 column_config={
                     "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
@@ -692,7 +692,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (CẤU TRÚC ĐỐI XỨNG CHUẨN ĐẸP NÓT LỆCH)
+# 2. CẬP NHẬT TRẬN ĐẤU (BỐ CỤC THEO ĐÚNG HÌNH KHOANH ĐỎ)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -709,40 +709,42 @@ elif menu == "📝 Cập nhật trận đấu":
             # 🔵 ĐỘI 1
             st.markdown("<div class='team-card-1'>🔵 ĐỘI 1</div>", unsafe_allow_html=True)
 
-            cp1_name, cp1_bet = st.columns([2.5, 1])
+            # Dòng 1 Đội 1: VĐV 1 + Điểm VĐV 1 + Điểm Số Đội 1 (đưa lên vị trí khoanh đỏ)
+            cp1_name, cp1_bet, cp1_team = st.columns([2.2, 1, 1.3])
             with cp1_name:
                 p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
             with cp1_bet:
                 k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
+            with cp1_team:
+                score1 = st.number_input("Điểm Số Đội 1", min_value=0, max_value=30, value=21, key="s1")
 
-            cp2_name, cp2_bet = st.columns([2.5, 1])
+            # Dòng 2 Đội 1: VĐV 2 + Điểm VĐV 2 (đầy đủ để tính xếp hạng)
+            cp2_name, cp2_bet, _ = st.columns([2.2, 1, 1.3])
             with cp2_name:
                 p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
             with cp2_bet:
-                score1 = st.number_input("Điểm Đội 1", min_value=0, max_value=30, value=21, key="s1")
-
-            # Mặc định Điểm VĐV 2 bằng 1 để lưu dữ liệu chuẩn xác
-            k1_2 = 1
+                k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
 
             st.write("")
 
             # 🔴 ĐỘI 2
             st.markdown("<div class='team-card-2'>🔴 ĐỘI 2</div>", unsafe_allow_html=True)
 
-            cp3_name, cp3_bet = st.columns([2.5, 1])
+            # Dòng 1 Đội 2: VĐV 1 + Điểm VĐV 1 + Điểm Số Đội 2 (đưa lên vị trí khoanh đỏ)
+            cp3_name, cp3_bet, cp3_team = st.columns([2.2, 1, 1.3])
             with cp3_name:
                 p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
             with cp3_bet:
                 k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
+            with cp3_team:
+                score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19, key="s2")
 
-            cp4_name, cp4_bet = st.columns([2.5, 1])
+            # Dòng 2 Đội 2: VĐV 2 + Điểm VĐV 2 (đầy đủ để tính xếp hạng)
+            cp4_name, cp4_bet, _ = st.columns([2.2, 1, 1.3])
             with cp4_name:
                 p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
             with cp4_bet:
-                score2 = st.number_input("Điểm Đội 2", min_value=0, max_value=30, value=19, key="s2")
-
-            # Mặc định Điểm VĐV 2 bằng 1 để lưu dữ liệu chuẩn xác
-            k2_2 = 1
+                k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
 
             video_input = st.text_input("🎥 Link Video YouTube (Tùy chọn):", placeholder="https://...")
 
@@ -840,8 +842,8 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                 with st.expander("🔍 Chi tiết & Video"):
                     st.write(
                         f"• **Mùa:** `{m['season']}`\n"
-                        f"• **Đội 1:** {m['p1_1']} (`điểm {m['k1_1']}`) | {m['p1_2']}\n"
-                        f"• **Đội 2:** {m['p2_1']} (`điểm {m['k2_1']}`) | {m['p2_2']}"
+                        f"• **Đội 1:** {m['p1_1']} (`điểm {m['k1_1']}`) | {m['p1_2']} (`điểm {m['k1_2']}`)\n"
+                        f"• **Đội 2:** {m['p2_1']} (`điểm {m['k2_1']}`) | {m['p2_2']} (`điểm {m['k2_2']}`)"
                     )
 
                     if m["video_url"]:

@@ -5,13 +5,13 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="CLB Cầu Lông - HVBADMINTON",
+    page_title="CLB Cầu Lông - HV BADMINTON",
     page_icon="🏸",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn chỉnh độ cao & phẳng lề triệt để
+# CSS Tối ưu căn chỉnh thẳng hàng tuyệt đối & đổi tên thương hiệu
 st.markdown(
     """
     <style>
@@ -26,12 +26,12 @@ st.markdown(
         max-width: 100% !important;
     }
 
-    /* Ép tất cả các hàng căn giữa tuyệt đối theo chiều dọc */
+    /* Đảm bảo hàng ngang căn đáy (bottom) để tiêu đề Đội thẳng hàng 100% với Ô Điểm */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: center !important;
+        align-items: flex-end !important;
         gap: 6px !important;
         width: 100% !important;
     }
@@ -41,10 +41,10 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
-    /* Tối ưu ô chọn & ô nhập số */
+    /* Tối ưu chiều cao đồng nhất 40px cho các ô */
     div[data-baseweb="select"] > div {
         min-height: 40px !important;
-        font-size: 0.8rem !important;
+        font-size: 0.85rem !important;
         padding: 0 2px !important;
     }
     
@@ -52,15 +52,6 @@ st.markdown(
         height: 40px !important;
         font-size: 0.9rem !important;
         padding: 2px 4px !important;
-    }
-
-    /* Bỏ khoảng trống thừa của ô NumberInput khi ẩn label */
-    div[data-testid="stNumberInput"] {
-        margin-top: 0px !important;
-        padding-top: 0px !important;
-    }
-    div[data-testid="stNumberInput"] > label {
-        display: none !important;
     }
 
     .stPopover button {
@@ -153,7 +144,7 @@ st.markdown(
         margin-right: 4px;
     }
 
-    /* Thẻ tiêu đề Đội bằng chính xác độ cao 40px với ô điểm */
+    /* Thiết lập chuẩn chiều cao 40px cho thẻ tiêu đề Đội */
     .team-card-1 {
         background-color: #e7f5ff;
         border-left: 4px solid #1c7ed6;
@@ -166,6 +157,7 @@ st.markdown(
         color: #1c7ed6;
         font-size: 0.9rem;
         box-sizing: border-box;
+        margin-bottom: 1px;
     }
     .team-card-2 {
         background-color: #fff5f5;
@@ -179,6 +171,7 @@ st.markdown(
         color: #f03e3e;
         font-size: 0.9rem;
         box-sizing: border-box;
+        margin-bottom: 1px;
     }
     </style>
 """,
@@ -374,13 +367,13 @@ def render_scoreboard_html(team1_str, score1, team2_str, score2, is_team1_winner
     """
 
 
-# Header
+# Header thương hiệu chuẩn HV BADMINTON
 st.markdown(
     """
     <div style="display: flex; align-items: center; margin-bottom: 6px;">
         <span style="font-size: 1.5rem; margin-right: 6px;">🏸</span>
         <div>
-            <h3 style="margin: 0; padding: 0; font-size: 1.1rem;">HVBADMINTON</h3>
+            <h3 style="margin: 0; padding: 0; font-size: 1.1rem;">HV BADMINTON</h3>
         </div>
     </div>
 """,
@@ -708,7 +701,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (ĐÃ FIX CHUẨN THẲNG HÀNG 100% & ĐỔI TÊN ĐIỂM)
+# 2. CẬP NHẬT TRẬN ĐẤU (THẲNG HÀNG 100% ĐỘI 1 & ĐỘI 2)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -722,7 +715,7 @@ elif menu == "📝 Cập nhật trận đấu":
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
-            # 🔵 ĐỘI 1: Căn chuẩn ngang hàng tuyệt đối
+            # 🔵 ĐỘI 1: Căn đáy chuẩn 100% không bao giờ lệch
             col_t1_title, col_t1_score = st.columns([2.5, 1])
             with col_t1_title:
                 st.markdown("<div class='team-card-1'>🔵 ĐỘI 1</div>", unsafe_allow_html=True)
@@ -743,7 +736,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             st.write("")
 
-            # 🔴 ĐỘI 2: Căn chuẩn ngang hàng tuyệt đối
+            # 🔴 ĐỘI 2: Căn đáy chuẩn 100% không bao giờ lệch
             col_t2_title, col_t2_score = st.columns([2.5, 1])
             with col_t2_title:
                 st.markdown("<div class='team-card-2'>🔴 ĐỘI 2</div>", unsafe_allow_html=True)

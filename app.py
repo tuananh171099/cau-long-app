@@ -184,6 +184,16 @@ def load_data():
 members_list, matches_df = load_data()
 
 
+# Hàm chuyển đổi an toàn giá trị Kèo sang số nguyên
+def get_bet_val(val, default=10):
+    try:
+        if pd.notna(val):
+            return int(float(val))
+    except Exception:
+        pass
+    return default
+
+
 # Hàm phụ trợ dựng khung Scoreboard chuẩn thể thao
 def render_scoreboard_html(
     team1_str, score1, team2_str, score2, is_team1_winner
@@ -278,10 +288,10 @@ if menu == "🏆 Bảng Xếp Hạng":
                 p2_1 = row.get("Đội 2 - VĐV 1")
                 p2_2 = row.get("Đội 2 - VĐV 2")
 
-                k1_1 = int(row.get("Kèo 1_1", 10)) if pd.notna(row.get("Kèo 1_1")) else 10
-                k1_2 = int(row.get("Kèo 1_2", 10)) if pd.notna(row.get("Kèo 1_2")) else 10
-                k2_1 = int(row.get("Kèo 2_1", 10)) if pd.notna(row.get("Kèo 2_1")) else 10
-                k2_2 = int(row.get("Kèo 2_2", 10)) if pd.notna(row.get("Kèo 2_2")) else 10
+                k1_1 = get_bet_val(row.get("Kèo 1_1"))
+                k1_2 = get_bet_val(row.get("Kèo 1_2"))
+                k2_1 = get_bet_val(row.get("Kèo 2_1"))
+                k2_2 = get_bet_val(row.get("Kèo 2_2"))
 
                 if row["Đội Thắng"] == "Đội 1":
                     winners = [p1_1, p1_2]
@@ -290,12 +300,14 @@ if menu == "🏆 Bảng Xếp Hạng":
                     winners = [p2_1, p2_2]
                     losers = [(p1_1, k1_1), (p1_2, k1_2)]
 
+                # Cộng điểm và số trận thắng
                 for w in winners:
                     if w in stats:
                         stats[w]["Điểm"] += 3
                         stats[w]["Thắng"] += 1
                         stats[w]["Tổng Số Trận"] += 1
 
+                # Đội thua: Cộng số trận thua & CỘNG ĐÚNG SỐ TIỀN KÈO VÀO QUỸ
                 for l_player, l_bet in losers:
                     if l_player in stats:
                         stats[l_player]["Thua"] += 1
@@ -498,14 +510,12 @@ elif menu == "📝 Cập nhật trận đấu":
                     unsafe_allow_html=True,
                 )
                 
-                # VĐV 1 & Kèo
                 cp1_name, cp1_bet = st.columns([2.5, 1])
                 with cp1_name:
                     p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
                 with cp1_bet:
                     k1_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, key="k1_1")
 
-                # VĐV 2 & Kèo
                 cp2_name, cp2_bet = st.columns([2.5, 1])
                 with cp2_name:
                     p2 = st.selectbox(
@@ -528,7 +538,6 @@ elif menu == "📝 Cập nhật trận đấu":
                     unsafe_allow_html=True,
                 )
                 
-                # VĐV 1 & Kèo
                 cp3_name, cp3_bet = st.columns([2.5, 1])
                 with cp3_name:
                     p3 = st.selectbox(
@@ -540,7 +549,6 @@ elif menu == "📝 Cập nhật trận đấu":
                 with cp3_bet:
                     k2_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, key="k2_1")
 
-                # VĐV 2 & Kèo
                 cp4_name, cp4_bet = st.columns([2.5, 1])
                 with cp4_name:
                     p4 = st.selectbox(
@@ -609,10 +617,10 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
             p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
-            k1_1 = f" ({int(row['Kèo 1_1'])}k)" if pd.notna(row.get("Kèo 1_1")) else ""
-            k1_2 = f" ({int(row['Kèo 1_2'])}k)" if pd.notna(row.get("Kèo 1_2")) else ""
-            k2_1 = f" ({int(row['Kèo 2_1'])}k)" if pd.notna(row.get("Kèo 2_1")) else ""
-            k2_2 = f" ({int(row['Kèo 2_2'])}k)" if pd.notna(row.get("Kèo 2_2")) else ""
+            k1_1 = f" ({get_bet_val(row.get('Kèo 1_1'))}k)"
+            k1_2 = f" ({get_bet_val(row.get('Kèo 1_2'))}k)"
+            k2_1 = f" ({get_bet_val(row.get('Kèo 2_1'))}k)"
+            k2_2 = f" ({get_bet_val(row.get('Kèo 2_2'))}k)"
 
             team1_str = f"{p1_1}{k1_1} / {p1_2}{k1_2}"
             team2_str = f"{p2_1}{k2_1} / {p2_2}{k2_2}"
@@ -690,16 +698,16 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     not is_team1 and row["Đội Thắng"] == "Đội 2"
                 )
 
-                # Tính tiền phạt nếu thua
+                # Lấy đúng tiền phạt kèo cá nhân
                 bet_amount = 10
-                if selected_member == p1_1 and pd.notna(row.get("Kèo 1_1")):
-                    bet_amount = int(row["Kèo 1_1"])
-                elif selected_member == p1_2 and pd.notna(row.get("Kèo 1_2")):
-                    bet_amount = int(row["Kèo 1_2"])
-                elif selected_member == p2_1 and pd.notna(row.get("Kèo 2_1")):
-                    bet_amount = int(row["Kèo 2_1"])
-                elif selected_member == p2_2 and pd.notna(row.get("Kèo 2_2")):
-                    bet_amount = int(row["Kèo 2_2"])
+                if selected_member == p1_1:
+                    bet_amount = get_bet_val(row.get("Kèo 1_1"))
+                elif selected_member == p1_2:
+                    bet_amount = get_bet_val(row.get("Kèo 1_2"))
+                elif selected_member == p2_1:
+                    bet_amount = get_bet_val(row.get("Kèo 2_1"))
+                elif selected_member == p2_2:
+                    bet_amount = get_bet_val(row.get("Kèo 2_2"))
 
                 if row["Ngày"] == today_str:
                     if is_winner:
@@ -764,10 +772,10 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
                     p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
-                    k1_1 = f" ({int(row['Kèo 1_1'])}k)" if pd.notna(row.get("Kèo 1_1")) else ""
-                    k1_2 = f" ({int(row['Kèo 1_2'])}k)" if pd.notna(row.get("Kèo 1_2")) else ""
-                    k2_1 = f" ({int(row['Kèo 2_1'])}k)" if pd.notna(row.get("Kèo 2_1")) else ""
-                    k2_2 = f" ({int(row['Kèo 2_2'])}k)" if pd.notna(row.get("Kèo 2_2")) else ""
+                    k1_1 = f" ({get_bet_val(row.get('Kèo 1_1'))}k)"
+                    k1_2 = f" ({get_bet_val(row.get('Kèo 1_2'))}k)"
+                    k2_1 = f" ({get_bet_val(row.get('Kèo 2_1'))}k)"
+                    k2_2 = f" ({get_bet_val(row.get('Kèo 2_2'))}k)"
 
                     team1_str = f"{p1_1}{k1_1} / {p1_2}{k1_2}"
                     team2_str = f"{p2_1}{k2_1} / {p2_2}{k2_2}"

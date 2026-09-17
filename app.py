@@ -5,7 +5,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="CLB Cầu Lông - HVBADMINTON",
+    page_title="CLB Cầu Lông - HV BADMINTON",
     page_icon="🏸",
     layout="wide",
     initial_sidebar_state="expanded",

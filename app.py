@@ -117,8 +117,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz188X3eDxLYFBakFxlGo3QEdHNMMpc8EhoLYyiBANPKonjI7wd4loCE0ywqBKluVJgrw/exec"
+SHEET_URL = "THAY_LINK_GOOGLE_SHEET_CUA_BAN_VAO_DAY"
+SCRIPT_URL = "THAY_LINK_SCRIPT_VAO_DAY"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -266,58 +266,93 @@ with st.sidebar:
 # 1. BẢNG XẾP HẠNG
 # ==========================================
 if menu == "🏆 Bảng Xếp Hạng":
-    st.subheader("🏆 Bảng Xếp Hạng Theo Mùa Giải")
+    st.subheader("🏆 Bảng Xếp Hạng")
 
-    # Xử lý danh sách Mùa Giải
+    # Danh sách mùa giải
     seasons_list = seasons_df["Tên Mùa"].dropna().tolist() if not seasons_df.empty else ["Mùa 1 (2026)"]
-    active_season = seasons_list[-1] if seasons_list else "Mùa 1 (2026)"
 
-    c_season, c_manage = st.columns([2, 1])
+    c_season, c_end, c_pop = st.columns([2.5, 1.2, 1])
+
     with c_season:
-        selected_season = st.selectbox("🏆 เลือก Mùa Giải muốn xem xếp hạng:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0)
+        selected_season = st.selectbox("Mùa Giải:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0)
 
-    with c_manage:
+    with c_end:
         st.write("")
         st.write("")
-        with st.popover("⚙️ Quản Lý / Tạo Mùa Giải"):
-            st.markdown("### ➕ Tạo Mùa Giải Mới")
-            with st.form("add_season_form"):
-                new_s_name = st.text_input("Tên Mùa Giải Mới:", value=f"Mùa {len(seasons_list)+1} (2026)")
+        if st.button(f"🛑 Kết thúc {selected_season}", use_container_width=True):
+            requests.post(
+                SCRIPT_URL,
+                json={
+                    "action": "end_season",
+                    "season_name": selected_season,
+                    "end_date": date.today().strftime("%Y-%m-%d")
+                }
+            )
+            st.toast(f"Đã kết thúc {selected_season}!", icon="✅")
+            st.cache_data.clear()
+            st.rerun()
+
+    with c_pop:
+        st.write("")
+        st.write("")
+        with st.popover("⚙️ Tùy Chỉnh Mùa"):
+            st.markdown("### ➕ Thêm Mùa Mới")
+            with st.form("add_season_form", clear_on_submit=True):
+                new_s_name = st.text_input("Tên Mùa Giải Mới:", placeholder=f"Mùa {len(seasons_list)+1} (2026)")
                 s_start_date = st.date_input("🗓️ Ngày Bắt Đầu Mùa", value=date.today())
-                create_s_btn = st.form_submit_button("🚀 Khởi Tranh Mùa Mới", use_container_width=True)
+                create_s_btn = st.form_submit_button("Thêm Mùa Mới", use_container_width=True)
 
                 if create_s_btn:
-                    if new_s_name.strip() in seasons_list:
-                        st.error("❌ Tên mùa giải này đã tồn tại!")
+                    s_name_final = new_s_name.strip() if new_s_name.strip() else f"Mùa {len(seasons_list)+1} (2026)"
+                    if s_name_final in seasons_list:
+                        st.error("❌ Tên mùa giải đã tồn tại!")
                     else:
                         requests.post(
                             SCRIPT_URL,
                             json={
                                 "action": "add_season",
-                                "season_name": new_s_name.strip(),
+                                "season_name": s_name_final,
                                 "start_date": s_start_date.strftime("%Y-%m-%d")
                             }
                         )
-                        st.toast(f"Đã bắt đầu {new_s_name.strip()}!", icon="🎉")
+                        st.toast(f"Đã tạo {s_name_final}!", icon="🎉")
                         st.cache_data.clear()
                         st.rerun()
 
             st.markdown("---")
-            st.markdown("### 🛑 Kết Thúc Mùa Hiện Tại")
-            if st.button(f"Kết thúc {active_season}", use_container_width=True):
+            st.markdown(f"### ✏️ Sửa Tên {selected_season}")
+            with st.form("edit_season_form"):
+                rename_val = st.text_input("Tên Mới:", value=selected_season)
+                save_rename = st.form_submit_button("Lưu Tên Mới", use_container_width=True)
+                if save_rename:
+                    if rename_val.strip() and rename_val.strip() != selected_season:
+                        requests.post(
+                            SCRIPT_URL,
+                            json={
+                                "action": "edit_season",
+                                "old_name": selected_season,
+                                "new_name": rename_val.strip()
+                            }
+                        )
+                        st.toast("Đã đổi tên mùa thành công!", icon="✅")
+                        st.cache_data.clear()
+                        st.rerun()
+
+            st.markdown("---")
+            st.markdown(f"### 🗑️ Xóa {selected_season}")
+            if st.button("Xóa Mùa Này", use_container_width=True):
                 requests.post(
                     SCRIPT_URL,
                     json={
-                        "action": "end_season",
-                        "season_name": active_season,
-                        "end_date": date.today().strftime("%Y-%m-%d")
+                        "action": "delete_season",
+                        "season_name": selected_season
                     }
                 )
-                st.toast(f"Đã kết thúc {active_season}!", icon="✅")
+                st.toast(f"Đã xóa {selected_season}!", icon="🗑️")
                 st.cache_data.clear()
                 st.rerun()
 
-    # Lọc danh sách trận theo mùa đã chọn
+    # Lọc danh sách trận theo mùa giải
     df_season_matches = pd.DataFrame()
     if not matches_df.empty:
         df_season_matches = matches_df[
@@ -325,7 +360,7 @@ if menu == "🏆 Bảng Xếp Hạng":
         ]
 
     if df_season_matches.empty:
-        st.info(f"💡 Chưa có trận đấu nào trong `{selected_season}`.")
+        st.info(f"💡 Chưa có dữ liệu trận đấu nào trong `{selected_season}`.")
     else:
         tab_day, tab_month, tab_all = st.tabs(
             ["📅 Xếp hạng Theo Ngày", "📆 Xếp hạng Theo Tháng", "🌟 Bảng Xếp Hạng Mùa"]

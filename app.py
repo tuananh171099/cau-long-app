@@ -358,7 +358,7 @@ if menu == "🏆 Bảng Xếp Hạng":
         with st.popover(f"🛑 Kết thúc {selected_season_name}", use_container_width=True):
             st.markdown(f"### 🛑 Xác Nhận Kết Thúc\n**{selected_season_name}**")
             end_s_date = st.date_input("🗓️ Chọn Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
-            confirm_end = st.button("Đồng ý kết thúc mùa", use_container_width=True)
+            confirm_end = st.button("Kết thúc mùa này", use_container_width=True)
 
             if confirm_end:
                 requests.post(

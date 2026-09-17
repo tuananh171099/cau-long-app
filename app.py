@@ -137,8 +137,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4QXiNzVXTDLd9ltpCiMElur1F29Wi_xV6w5jMx-ZFlQ25nkvOdUI5OvpJU7469UHnjw/exec"
+SHEET_URL = "THAY_LINK_GOOGLE_SHEET_CUA_BAN_VAO_DAY"
+SCRIPT_URL = "THAY_LINK_SCRIPT_VAO_DAY"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -245,14 +245,14 @@ with st.sidebar:
 # ==========================================
 # 1. LEADERBOARD & QUỸ
 # ==========================================
-if menu == "🏆 Bảng Xếp Hạng":
-    st.subheader("🏆 Bảng Xếp Hạng ")
+if menu == "🏆 Leaderboard & Quỹ":
+    st.subheader("🏆 Bảng Xếp Hạng & Quỹ Thua Trận")
 
     if matches_df.empty:
         st.info("💡 Chưa có dữ liệu trận đấu nào. Hãy vào phần 'Cập nhật trận đấu' để ghi nhận trận đầu tiên!")
     else:
-        tab_today, tab_month, tab_all = st.tabs(
-            ["📅 Xếp hạng Hôm Nay", "📆 Xếp hạng Theo Tháng", "🌟 Tổng Sắp Tất Cả"]
+        tab_day, tab_month, tab_all = st.tabs(
+            ["📅 Xếp hạng Theo Ngày", "📆 Xếp hạng Theo Tháng", "🌟 Tổng Sắp Tất Cả"]
         )
 
         def calculate_leaderboard(df_filtered, show_points=False):
@@ -330,25 +330,60 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # --- Tab Hôm Nay ---
-        with tab_today:
-            today_str = date.today().strftime("%Y-%m-%d")
-            df_today = matches_df[matches_df["Ngày"] == today_str]
-            st.write(f"**Kết quả thi đấu ngày:** `{today_str}`")
+        # --- Tab Theo Ngày (Có chọn ngày) ---
+        with tab_day:
+            c_date, _ = st.columns([1, 2])
+            with c_date:
+                selected_date = st.date_input(
+                    "📅 Chọn ngày muốn xem xếp hạng:",
+                    value=date.today(),
+                )
 
-            df_lb_today = calculate_leaderboard(df_today, show_points=False)
-            st.dataframe(
-                df_lb_today,
-                use_container_width=True,
-                column_config={
-                    "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                        "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
-                    ),
-                    "Ủng Hộ Quỹ (k)": st.column_config.NumberColumn(
-                        "Ủng Hộ Quỹ (k)", format="%d k"
-                    ),
-                },
-            )
+            selected_date_str = selected_date.strftime("%Y-%m-%d")
+            df_day = matches_df[matches_df["Ngày"] == selected_date_str]
+
+            if df_day.empty:
+                st.info(f"💡 Không có trận đấu nào diễn ra trong ngày `{selected_date_str}`.")
+            else:
+                df_lb_day = calculate_leaderboard(df_day, show_points=False)
+                total_fund_day = df_lb_day["Ủng Hộ Quỹ (k)"].sum()
+                total_matches_day = len(df_day)
+
+                m1, m2 = st.columns(2)
+                with m1:
+                    st.markdown(
+                        f"""
+                        <div class="metric-card">
+                            <div class="metric-title">💰 Quỹ Thu Trong Ngày ({selected_date_str})</div>
+                            <div class="metric-value" style="color: #2b8a3e;">{total_fund_day:,.0f}k VNĐ</div>
+                        </div>
+                    """,
+                        unsafe_allow_html=True,
+                    )
+                with m2:
+                    st.markdown(
+                        f"""
+                        <div class="metric-card">
+                            <div class="metric-title">🏸 Tổng Trận Đã Đấu</div>
+                            <div class="metric-value" style="color: #1c7ed6;">{total_matches_day} Trận</div>
+                        </div>
+                    """,
+                        unsafe_allow_html=True,
+                    )
+
+                st.write("")
+                st.dataframe(
+                    df_lb_day,
+                    use_container_width=True,
+                    column_config={
+                        "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
+                            "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
+                        ),
+                        "Ủng Hộ Quỹ (k)": st.column_config.NumberColumn(
+                            "Ủng Hộ Quỹ (k)", format="%d k"
+                        ),
+                    },
+                )
 
         # --- Tab Theo Tháng ---
         with tab_month:

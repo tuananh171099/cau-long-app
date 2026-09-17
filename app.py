@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import time
 import pandas as pd
 import requests
 import streamlit as st
@@ -342,8 +343,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 selected_date = st.date_input("📅 Chọn ngày muốn xem xếp hạng:", value=date.today())
 
             selected_date_str = selected_date.strftime("%Y-%m-%d")
-            
-            # Lọc theo ngày chuẩn
+
             df_day = pd.DataFrame()
             if not matches_df.empty:
                 df_day = matches_df[
@@ -487,13 +487,13 @@ elif menu == "📝 Cập nhật trận đấu":
                 with cp1_name:
                     p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
                 with cp1_bet:
-                    k1_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, key="k1_1")
+                    k1_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k1_1")
 
                 cp2_name, cp2_bet = st.columns([2.5, 1])
                 with cp2_name:
                     p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
                 with cp2_bet:
-                    k1_2 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, key="k1_2")
+                    k1_2 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k1_2")
 
                 score1 = st.number_input("Điểm Số Đội 1", min_value=0, max_value=30, value=21)
 
@@ -503,13 +503,13 @@ elif menu == "📝 Cập nhật trận đấu":
                 with cp3_name:
                     p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
                 with cp3_bet:
-                    k2_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=0, key="k2_1")
+                    k2_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k2_1")
 
                 cp4_name, cp4_bet = st.columns([2.5, 1])
                 with cp4_name:
                     p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
                 with cp4_bet:
-                    k2_2 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=20, key="k2_2")
+                    k2_2 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k2_2")
 
                 score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19)
 
@@ -539,7 +539,14 @@ elif menu == "📝 Cập nhật trận đấu":
                         "Đội Thắng": winner,
                     }
                     requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
-                    st.success(f"🎉 Đã lưu thành công! **{winner}** chiến thắng ({score1} - {score2})")
+                    
+                    # Khung thông báo thành công nổi bật
+                    st.balloons()
+                    st.success(
+                        f"✅ **ĐÃ LƯU TRẬN ĐẤU THÀNH CÔNG!**\n\n"
+                        f"🏆 **Đội thắng:** {winner} ({score1} - {score2})"
+                    )
+                    time.sleep(2.5)
                     st.cache_data.clear()
                     st.rerun()
 
@@ -553,7 +560,6 @@ elif menu == "🛠️ Lịch sử các trận đấu":
     if matches_df.empty:
         st.info("Chưa có trận đấu nào trong hệ thống.")
     else:
-        # Gom nhóm theo Ngày
         matches_parsed = []
         for idx, row in matches_df.iterrows():
             m = parse_match_row(row)

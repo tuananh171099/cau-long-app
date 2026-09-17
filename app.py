@@ -11,33 +11,36 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối Ưu Giao Diện Điện Thoại (Mobile First Layout)
+# CSS Khắc phục triệt để lỗi tràn màn hình ngang trên Mobile
 st.markdown(
     """
     <style>
-    /* Tối ưu khoảng trống nền main */
+    /* Khóa cuộn ngang toàn trang */
+    html, body, [data-testid="stAppViewContainer"] {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
     .main .block-container {
         padding-top: 1rem !important;
         padding-bottom: 2rem !important;
-        padding-left: 0.8rem !important;
-        padding-right: 0.8rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        max-width: 100% !important;
     }
     
-    /* Ép các cột hiển thị ngang hàng trên Mobile */
-    [data-testid="column"] {
-        min-width: 0px !important;
-    }
+    /* Responsive khung chứa nút bấm */
     div[data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-        gap: 0.3rem !important;
+        flex-wrap: wrap !important;
+        gap: 0.4rem !important;
     }
 
-    /* Thu nhỏ nút bấm & Selectbox trên di động */
+    /* Thu nhỏ nút bấm & Selectbox chuẩn di động */
     .stButton button, .stPopover button {
         padding: 4px 8px !important;
         font-size: 0.8rem !important;
         height: 38px !important;
-        white-space: nowrap !important;
+        width: 100% !important;
     }
     div[data-baseweb="select"] > div {
         min-height: 38px !important;
@@ -48,24 +51,24 @@ st.markdown(
     .metric-card {
         background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
         border: 1px solid #e9ecef;
-        border-radius: 10px;
-        padding: 10px 14px;
+        border-radius: 8px;
+        padding: 8px 12px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
     .metric-title {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: #6c757d;
         font-weight: 600;
         margin-bottom: 2px;
         text-transform: uppercase;
     }
     .metric-value {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
         font-weight: 700;
         color: #212529;
     }
     
-    /* Scoreboard trên di động */
+    /* Scoreboard gọn nhẹ trên di động */
     .scoreboard-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -127,14 +130,14 @@ st.markdown(
     .team-card-1 {
         background-color: #e7f5ff;
         border-left: 4px solid #1c7ed6;
-        padding: 10px;
+        padding: 8px;
         border-radius: 6px;
         margin-bottom: 8px;
     }
     .team-card-2 {
         background-color: #fff5f5;
         border-left: 4px solid #f03e3e;
-        padding: 10px;
+        padding: 8px;
         border-radius: 6px;
         margin-bottom: 8px;
     }
@@ -335,11 +338,11 @@ def render_scoreboard_html(team1_str, score1, team2_str, score2, is_team1_winner
 # Header compact trên Mobile
 st.markdown(
     """
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-        <span style="font-size: 1.8rem; margin-right: 10px;">🏸</span>
+    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 1.6rem; margin-right: 8px;">🏸</span>
         <div>
-            <h2 style="margin: 0; padding: 0; font-size: 1.3rem;">HVBADMINTON</h2>
-            <p style="margin: 0; color: #6c757d; font-size: 0.75rem;">Bảng Xếp Hạng & Kết Quả Trận Đấu</p>
+            <h3 style="margin: 0; padding: 0; font-size: 1.2rem;">HVBADMINTON</h3>
+            <p style="margin: 0; color: #6c757d; font-size: 0.7rem;">Bảng Xếp Hạng & Trận Đấu</p>
         </div>
     </div>
 """,
@@ -371,18 +374,17 @@ if menu == "🏆 Bảng Xếp Hạng":
 
     seasons_list = [s["name"] for s in seasons_info]
     
-    # Ép 3 nút trên 1 dòng duy nhất tối ưu cho Mobile
-    col_s, col_e, col_p = st.columns([1.8, 1.1, 1.1])
-
-    with col_s:
-        selected_season_name = st.selectbox("Mùa Giải:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0, label_visibility="collapsed")
+    selected_season_name = st.selectbox("Mùa Giải:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0, label_visibility="collapsed")
 
     curr_s_item = next((s for s in seasons_info if s["name"] == selected_season_name), seasons_info[-1])
 
+    # Hàng 2 nút điều khiển mùa (gọn gàng 50-50 trên Mobile)
+    col_e, col_p = st.columns(2)
+
     with col_e:
         with st.popover("🛑 Kết thúc", use_container_width=True):
-            st.markdown(f"### 🛑 Xác Nhận Kết Thúc\n**{selected_season_name}**")
-            end_s_date = st.date_input("🗓️ Chọn Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
+            st.markdown(f"### 🛑 Kết Thúc\n**{selected_season_name}**")
+            end_s_date = st.date_input("🗓️ Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
             confirm_end = st.button("Đồng ý kết thúc mùa", use_container_width=True)
 
             if confirm_end:
@@ -474,7 +476,7 @@ if menu == "🏆 Bảng Xếp Hạng":
         st.info(f"💡 Chưa có trận đấu nào trong `{selected_season_name}`.")
     else:
         tab_day, tab_month, tab_all = st.tabs(
-            ["📅 Theo Ngày", "📆 Theo Tháng", "🌟 Tất Cả"]
+            ["📅 Ngày", "📆 Tháng", "🌟 Tất Cả"]
         )
 
         def calculate_leaderboard(df_filtered, show_points=False):
@@ -569,7 +571,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     st.markdown(
                         f"""
                         <div class="metric-card">
-                            <div class="metric-title">🎯 Tổng Điểm Thua</div>
+                            <div class="metric-title">🎯 Điểm Thua</div>
                             <div class="metric-value" style="color: #2b8a3e;">{total_fund_day:,.0f}</div>
                         </div>
                     """,
@@ -579,7 +581,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     st.markdown(
                         f"""
                         <div class="metric-card">
-                            <div class="metric-title">🏸 Tổng Số Trận</div>
+                            <div class="metric-title">🏸 Tổng Trận</div>
                             <div class="metric-value" style="color: #1c7ed6;">{total_matches_day} Trận</div>
                         </div>
                     """,
@@ -905,7 +907,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                 f"""
                 <div class="metric-card">
                     <div class="metric-title">📊 Hôm Nay</div>
-                    <div style="font-size: 0.95rem; margin-top: 3px;">
+                    <div style="font-size: 0.9rem; margin-top: 3px;">
                         Thắng: <b>{win_today}</b> | Thua: <b>{lose_today}</b><br>
                         Điểm thua: <b style="color:#f03e3e;">{fine_today}</b>
                     </div>
@@ -919,7 +921,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                 f"""
                 <div class="metric-card">
                     <div class="metric-title">📈 Tháng {now.month}/{now.year}</div>
-                    <div style="font-size: 0.95rem; margin-top: 3px;">
+                    <div style="font-size: 0.9rem; margin-top: 3px;">
                         Thắng: <b>{win_month}</b> | Thua: <b>{lose_month}</b><br>
                         Điểm thua: <b style="color:#f03e3e;">{fine_month}</b>
                     </div>

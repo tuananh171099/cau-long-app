@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn lề & co giãn chuẩn Mobile theo đúng vị trí khoanh đỏ
+# CSS Tối ưu co giãn & căn lề
 st.markdown(
     """
     <style>
@@ -26,7 +26,6 @@ st.markdown(
         max-width: 100% !important;
     }
 
-    /* Đảm bảo hàng ngang co giãn linh hoạt trên mobile */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -41,7 +40,6 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
-    /* Tối ưu ô chọn & ô nhập số */
     div[data-baseweb="select"] > div {
         min-height: 38px !important;
         font-size: 0.8rem !important;
@@ -306,15 +304,15 @@ def parse_match_row(row):
 
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
     video_url = str(get_val(row, "Video", 12, "")).strip()
-    season_name = str(get_val(row, "Mùa Giải", 13, "")).strip()
 
+    # Tìm chính xác mùa giải dựa theo ngày đấu
+    season_name = ""
+    for s in seasons_info:
+        if match_belong_to_season(dt_obj, s):
+            season_name = s["name"]
+            break
     if not season_name:
-        for s in seasons_info:
-            if match_belong_to_season(dt_obj, s):
-                season_name = s["name"]
-                break
-        if not season_name:
-            season_name = seasons_info[-1]["name"]
+        season_name = seasons_info[0]["name"] if seasons_info else "Mùa 1 (2026)"
 
     if not winner:
         winner = "Đội 1" if score1 > score2 else "Đội 2"
@@ -389,7 +387,7 @@ with st.sidebar:
 
 
 # ==========================================
-# 1. BẢNG XẾP HẠNG
+# 1. BẢNG XẾP HẠNG (ĐÃ ĐỔI TÊN & THỨ TỰ TAB, FIX HIỂN THỊ TAB THÁNG)
 # ==========================================
 if menu == "🏆 Bảng Xếp Hạng":
     st.subheader("🏆 Bảng Xếp Hạng")
@@ -502,8 +500,9 @@ if menu == "🏆 Bảng Xếp Hạng":
     if df_season_matches.empty:
         st.info(f"💡 Chưa có trận đấu nào trong `{selected_season_name}`.")
     else:
-        tab_day, tab_month, tab_all = st.tabs(
-            ["📅 Ngày", "📆 Tháng", "🌟 Tất Cả"]
+        # Thứ tự Tab mới theo yêu cầu: BXH Ngày - BXH Cả Mùa - BXH Tháng
+        tab_day, tab_all, tab_month = st.tabs(
+            ["📅 BXH Ngày", "🌟 BXH Cả Mùa", "📆 BXH Tháng"]
         )
 
         def calculate_leaderboard(df_filtered, show_points=False):
@@ -577,7 +576,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # Tab Ngày
+        # 1. Tab BXH Ngày
         with tab_day:
             selected_date = st.date_input("📅 Chọn ngày xem:", value=date.today(), format="DD/MM/YYYY")
             selected_date_str = format_date_vn(selected_date)
@@ -626,7 +625,19 @@ if menu == "🏆 Bảng Xếp Hạng":
                     },
                 )
 
-        # Tab Tháng
+        # 2. Tab BXH Cả Mùa
+        with tab_all:
+            st.dataframe(
+                calculate_leaderboard(df_season_matches, show_points=True),
+                use_container_width=True,
+                column_config={
+                    "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
+                        "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
+                    )
+                },
+            )
+
+        # 3. Tab BXH Tháng (Đã fix hiển thị đúng bảng xếp hạng)
         with tab_month:
             c1, c2 = st.columns(2)
             with c1:
@@ -641,58 +652,49 @@ if menu == "🏆 Bảng Xếp Hạng":
 
             df_month = df_season_matches[df_season_matches.apply(is_in_month, axis=1)]
 
-            df_lb_month = calculate_leaderboard(df_month, show_points=False)
-            total_fund_month = df_lb_month["Điểm thành viên"].sum()
-            total_matches_month = len(df_month)
+            if df_month.empty:
+                st.info(f"💡 Không có trận nào trong tháng `{selected_month}/{selected_year}`.")
+            else:
+                df_lb_month = calculate_leaderboard(df_month, show_points=False)
+                total_fund_month = df_lb_month["Điểm thành viên"].sum()
+                total_matches_month = len(df_month)
 
-            m1, m2 = st.columns(2)
-            with m1:
-                st.markdown(
-                    f"""
-                    <div class="metric-card">
-                        <div class="metric-title">🎯 Điểm Thua ({selected_month}/{selected_year})</div>
-                        <div class="metric-value" style="color: #2b8a3e;">{total_fund_month:,.0f}</div>
-                    </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-            with m2:
-                st.markdown(
-                    f"""
-                    <div class="metric-card">
-                        <div class="metric-title">🏸 Tổng Số Trận</div>
-                        <div class="metric-value" style="color: #1c7ed6;">{total_matches_month} Trận</div>
-                    </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-
-            st.write("")
-            st.dataframe(
-                df_month,
-                use_container_width=True,
-                column_config={
-                    "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                        "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
+                m1, m2 = st.columns(2)
+                with m1:
+                    st.markdown(
+                        f"""
+                        <div class="metric-card">
+                            <div class="metric-title">🎯 Điểm Thua ({selected_month}/{selected_year})</div>
+                            <div class="metric-value" style="color: #2b8a3e;">{total_fund_month:,.0f}</div>
+                        </div>
+                    """,
+                        unsafe_allow_html=True,
                     )
-                },
-            )
-
-        # Tab All
-        with tab_all:
-            st.dataframe(
-                calculate_leaderboard(df_season_matches, show_points=True),
-                use_container_width=True,
-                column_config={
-                    "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                        "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
+                with m2:
+                    st.markdown(
+                        f"""
+                        <div class="metric-card">
+                            <div class="metric-title">🏸 Tổng Số Trận</div>
+                            <div class="metric-value" style="color: #1c7ed6;">{total_matches_month} Trận</div>
+                        </div>
+                    """,
+                        unsafe_allow_html=True,
                     )
-                },
-            )
+
+                st.write("")
+                st.dataframe(
+                    df_lb_month,
+                    use_container_width=True,
+                    column_config={
+                        "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
+                            "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
+                        )
+                    },
+                )
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (BỐ CỤC THEO ĐÚNG HÌNH KHOANH ĐỎ)
+# 2. CẬP NHẬT TRẬN ĐẤU
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -709,7 +711,6 @@ elif menu == "📝 Cập nhật trận đấu":
             # 🔵 ĐỘI 1
             st.markdown("<div class='team-card-1'>🔵 ĐỘI 1</div>", unsafe_allow_html=True)
 
-            # Dòng 1 Đội 1: VĐV 1 + Điểm VĐV 1 + Điểm Số Đội 1 (đưa lên vị trí khoanh đỏ)
             cp1_name, cp1_bet, cp1_team = st.columns([2.2, 1, 1.3])
             with cp1_name:
                 p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
@@ -718,7 +719,6 @@ elif menu == "📝 Cập nhật trận đấu":
             with cp1_team:
                 score1 = st.number_input("Điểm Số Đội 1", min_value=0, max_value=30, value=21, key="s1")
 
-            # Dòng 2 Đội 1: VĐV 2 + Điểm VĐV 2 (đầy đủ để tính xếp hạng)
             cp2_name, cp2_bet, _ = st.columns([2.2, 1, 1.3])
             with cp2_name:
                 p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
@@ -730,7 +730,6 @@ elif menu == "📝 Cập nhật trận đấu":
             # 🔴 ĐỘI 2
             st.markdown("<div class='team-card-2'>🔴 ĐỘI 2</div>", unsafe_allow_html=True)
 
-            # Dòng 1 Đội 2: VĐV 1 + Điểm VĐV 1 + Điểm Số Đội 2 (đưa lên vị trí khoanh đỏ)
             cp3_name, cp3_bet, cp3_team = st.columns([2.2, 1, 1.3])
             with cp3_name:
                 p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
@@ -739,7 +738,6 @@ elif menu == "📝 Cập nhật trận đấu":
             with cp3_team:
                 score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19, key="s2")
 
-            # Dòng 2 Đội 2: VĐV 2 + Điểm VĐV 2 (đầy đủ để tính xếp hạng)
             cp4_name, cp4_bet, _ = st.columns([2.2, 1, 1.3])
             with cp4_name:
                 p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")

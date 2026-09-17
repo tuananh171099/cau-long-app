@@ -69,22 +69,76 @@ st.markdown(
         margin-bottom: 10px;
     }
     
-    /* Trận đấu hiển thị đẹp mắt */
-    .match-box {
+    /* SCOREBOARD KHUNG TRẬN ĐẤU THEO KIỂU THỂ THAO */
+    .scoreboard-card {
         background-color: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 10px;
-        padding: 12px 18px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .scoreboard-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 12px;
+        border-bottom: 1px solid #f0f0f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .scoreboard-row:last-child {
+        border-bottom: none;
+    }
+    .team-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #495057;
+        letter-spacing: 0.3px;
+        flex-grow: 1;
+    }
+    .winner-row {
+        background-color: #f8f9fa;
+    }
+    .winner-row .team-name {
+        color: #000000;
+        font-weight: 800;
+    }
+    .score-box {
+        width: 42px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        font-weight: 800;
+        border-radius: 4px;
+        margin-left: 8px;
+    }
+    .score-winner {
+        background-color: #212529;
+        color: #ffffff;
+    }
+    .score-loser {
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    .badge-win {
+        background-color: #2b8a3e;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-right: 8px;
+        text-transform: uppercase;
     }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4QXiNzVXTDLd9ltpCiMElur1F29Wi_xV6w5jMx-ZFlQ25nkvOdUI5OvpJU7469UHnjw/exec"
+SHEET_URL = "THAY_LINK_GOOGLE_SHEET_CUA_BAN_VAO_DAY"
+SCRIPT_URL = "THAY_LINK_SCRIPT_VAO_DAY"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -124,6 +178,35 @@ def load_data():
 
 
 members_list, matches_df = load_data()
+
+
+# Hàm phụ trợ dựng khung Scoreboard chuẩn thể thao
+def render_scoreboard_html(
+    team1_str, score1, team2_str, score2, is_team1_winner
+):
+    row1_class = "winner-row" if is_team1_winner else ""
+    row2_class = "" if is_team1_winner else "winner-row"
+
+    score1_class = "score-winner" if is_team1_winner else "score-loser"
+    score2_class = "score-loser" if is_team1_winner else "score-winner"
+
+    badge1 = '<span class="badge-win">WIN</span>' if is_team1_winner else ""
+    badge2 = "" if is_team1_winner else '<span class="badge-win">WIN</span>'
+
+    html = f"""
+    <div class="scoreboard-card">
+        <div class="scoreboard-row {row1_class}">
+            <div class="team-name">{badge1} {team1_str}</div>
+            <div class="score-box {score1_class}">{score1}</div>
+        </div>
+        <div class="scoreboard-row {row2_class}">
+            <div class="team-name">{badge2} {team2_str}</div>
+            <div class="score-box {score2_class}">{score2}</div>
+        </div>
+    </div>
+    """
+    return html
+
 
 # Header chính ứng dụng
 st.markdown(
@@ -438,31 +521,29 @@ elif menu == "🛠️ Lịch sử & Quản lý trận":
     if matches_df.empty:
         st.info("Chưa có trận đấu nào trong hệ thống.")
     else:
-        st.caption("Bạn có thể xem lại hoặc XÓA các trận đấu bị nhập sai dữ liệu bên dưới:")
+        st.caption("Danh sách trận đấu được hiển thị theo giao diện Scoreboard thi đấu:")
+
         for idx, row in matches_df.iterrows():
             col_info, col_del = st.columns([6, 1])
 
-            team1_str = f"{row['Đội 1 - VĐV 1']}/{row['Đội 1 - VĐV 2']}"
-            team2_str = f"{row['Đội 2 - VĐV 1']}/{row['Đội 2 - VĐV 2']}"
+            team1_str = f"{row['Đội 1 - VĐV 1']} / {row['Đội 1 - VĐV 2']}"
+            team2_str = f"{row['Đội 2 - VĐV 1']} / {row['Đội 2 - VĐV 2']}"
             score1 = row["Điểm Đội 1"]
             score2 = row["Điểm Đội 2"]
-
-            if row["Đội Thắng"] == "Đội 1":
-                match_display = f"🔥 **{team1_str} {score1}** - {score2} {team2_str}"
-            else:
-                match_display = f"{team1_str} {score1} - **{score2} {team2_str}** 🔥"
+            is_team1_winner = row["Đội Thắng"] == "Đội 1"
 
             with col_info:
+                st.caption(f"📅 **Ngày:** `{row['Ngày']}`")
                 st.markdown(
-                    f"""
-                    <div class="match-box">
-                        📅 <b>{row['Ngày']}</b> &nbsp;|&nbsp; {match_display}
-                    </div>
-                """,
+                    render_scoreboard_html(
+                        team1_str, score1, team2_str, score2, is_team1_winner
+                    ),
                     unsafe_allow_html=True,
                 )
 
             with col_del:
+                st.write("")
+                st.write("")
                 sheet_row = idx + 2
                 if st.button("🗑️ Xóa", key=f"del_match_{idx}"):
                     requests.post(
@@ -586,17 +667,18 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     team2_str = (
                         f"{row['Đội 2 - VĐV 1']} / {row['Đội 2 - VĐV 2']}"
                     )
-                    score_str = (
-                        f"{row['Điểm Đội 1']} - {row['Điểm Đội 2']}"
-                    )
-
-                    if row["Đội Thắng"] == "Đội 1":
-                        match_text = f"🟢 **{team1_str}** &nbsp; ` {score_str} ` &nbsp; {team2_str}"
-                    else:
-                        match_text = f"{team1_str} &nbsp; ` {score_str} ` &nbsp; 🟢 **{team2_str}**"
+                    score1 = row["Điểm Đội 1"]
+                    score2 = row["Điểm Đội 2"]
+                    is_team1_winner = row["Đội Thắng"] == "Đội 1"
 
                     st.markdown(
-                        f"<div class='match-box'>{match_text}</div>",
+                        render_scoreboard_html(
+                            team1_str,
+                            score1,
+                            team2_str,
+                            score2,
+                            is_team1_winner,
+                        ),
                         unsafe_allow_html=True,
                     )
 

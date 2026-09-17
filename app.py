@@ -121,6 +121,35 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDR
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbn2We-c4JNS7WFe3aJeHZP5pzohHugzFvKlnmy9jT2vmMy1nfwuqtOhrMx_n69KvP0g/exec"
 
 
+def format_date_vn(dt_val):
+    """Chuyển đổi các định dạng ngày về chuẩn dd/mm/yyyy"""
+    if not dt_val:
+        return ""
+    if isinstance(dt_val, (date, datetime)):
+        return dt_val.strftime("%d/%m/%Y")
+    
+    val_str = str(dt_val).strip()
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(val_str, fmt).strftime("%d/%m/%Y")
+        except Exception:
+            pass
+    return val_str
+
+
+def parse_date_obj(dt_val):
+    """Parse ngày về datetime object để sắp xếp"""
+    if isinstance(dt_val, (date, datetime)):
+        return datetime.combine(dt_val, datetime.min.time())
+    val_str = str(dt_val).strip()
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(val_str, fmt)
+        except Exception:
+            pass
+    return datetime.min
+
+
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
     if "/edit" in url:
         base = url.split("/edit")[0]
@@ -173,7 +202,8 @@ def get_val(row, key, col_idx, default=""):
 
 
 def parse_match_row(row):
-    match_date = str(get_val(row, "Ngày", 0, "")).strip()
+    raw_date = get_val(row, "Ngày", 0, "")
+    match_date = format_date_vn(raw_date)
     p1_1 = str(get_val(row, "Đội 1 - VĐV 1", 1, "")).strip()
     k1_1 = to_int(get_val(row, "Kèo 1_1", 2, 1), 1)
     p1_2 = str(get_val(row, "Đội 1 - VĐV 2", 3, "")).strip()
@@ -195,6 +225,7 @@ def parse_match_row(row):
 
     return {
         "date": match_date,
+        "date_obj": parse_date_obj(raw_date),
         "p1_1": p1_1, "k1_1": k1_1,
         "p1_2": p1_2, "k1_2": k1_2,
         "score1": score1,
@@ -268,7 +299,6 @@ with st.sidebar:
 if menu == "🏆 Bảng Xếp Hạng":
     st.subheader("🏆 Bảng Xếp Hạng")
 
-    # Danh sách mùa giải
     seasons_list = seasons_df["Tên Mùa"].dropna().tolist() if not seasons_df.empty else ["Mùa 1 (2026)"]
 
     c_season, c_end, c_pop = st.columns([2.5, 1.2, 1])
@@ -285,7 +315,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 json={
                     "action": "end_season",
                     "season_name": selected_season,
-                    "end_date": date.today().strftime("%Y-%m-%d")
+                    "end_date": format_date_vn(date.today())
                 }
             )
             st.toast(f"Đã kết thúc {selected_season}!", icon="✅")
@@ -299,7 +329,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             st.markdown("### ➕ Thêm Mùa Mới")
             with st.form("add_season_form", clear_on_submit=True):
                 new_s_name = st.text_input("Tên Mùa Giải Mới:", placeholder=f"Mùa {len(seasons_list)+1} (2026)")
-                s_start_date = st.date_input("🗓️ Ngày Bắt Đầu Mùa", value=date.today())
+                s_start_date = st.date_input("🗓️ Ngày Bắt Đầu Mùa", value=date.today(), format="DD/MM/YYYY")
                 create_s_btn = st.form_submit_button("Thêm Mùa Mới", use_container_width=True)
 
                 if create_s_btn:
@@ -312,7 +342,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                             json={
                                 "action": "add_season",
                                 "season_name": s_name_final,
-                                "start_date": s_start_date.strftime("%Y-%m-%d")
+                                "start_date": format_date_vn(s_start_date)
                             }
                         )
                         st.toast(f"Đã tạo {s_name_final}!", icon="🎉")
@@ -352,7 +382,6 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.cache_data.clear()
                 st.rerun()
 
-    # Lọc danh sách trận theo mùa giải
     df_season_matches = pd.DataFrame()
     if not matches_df.empty:
         df_season_matches = matches_df[
@@ -441,9 +470,9 @@ if menu == "🏆 Bảng Xếp Hạng":
         with tab_day:
             c_date, _ = st.columns([1, 2])
             with c_date:
-                selected_date = st.date_input("📅 Chọn ngày muốn xem xếp hạng:", value=date.today())
+                selected_date = st.date_input("📅 Chọn ngày muốn xem xếp hạng:", value=date.today(), format="DD/MM/YYYY")
 
-            selected_date_str = selected_date.strftime("%Y-%m-%d")
+            selected_date_str = format_date_vn(selected_date)
 
             df_day = df_season_matches[
                 df_season_matches.apply(lambda r: parse_match_row(r)["date"] == selected_date_str, axis=1)
@@ -501,12 +530,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                 selected_month = st.number_input("Chọn Tháng", min_value=1, max_value=12, value=datetime.now().month)
 
             def is_in_month(row):
-                d_str = parse_match_row(row)["date"]
-                try:
-                    dt = datetime.strptime(d_str, "%Y-%m-%d")
-                    return dt.month == selected_month and dt.year == selected_year
-                except Exception:
-                    return False
+                m_info = parse_match_row(row)
+                dt = m_info["date_obj"]
+                return dt.month == selected_month and dt.year == selected_year
 
             df_month = df_season_matches[df_season_matches.apply(is_in_month, axis=1)]
 
@@ -519,7 +545,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.markdown(
                     f"""
                     <div class="metric-card">
-                        <div class="metric-title">🎯 Tổng Điểm (Tháng {selected_month})</div>
+                        <div class="metric-title">🎯 Tổng Điểm (Tháng {selected_month}/{selected_year})</div>
                         <div class="metric-value" style="color: #2b8a3e;">{total_fund_month:,.0f}</div>
                     </div>
                 """,
@@ -578,7 +604,7 @@ elif menu == "📝 Cập nhật trận đấu":
     else:
         st.info(f"🏆 Trận đấu này sẽ được tính vào: **{current_season}**")
         with st.form("match_form", clear_on_submit=False):
-            match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today())
+            match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
             col1, col2 = st.columns(2)
 
@@ -628,7 +654,7 @@ elif menu == "📝 Cập nhật trận đấu":
                 else:
                     winner = "Đội 1" if int(score1) > int(score2) else "Đội 2"
                     new_match = {
-                        "Ngày": match_date.strftime("%Y-%m-%d"),
+                        "Ngày": format_date_vn(match_date),
                         "Đội 1 - VĐV 1": p1,
                         "Kèo 1_1": int(k1_1),
                         "Đội 1 - VĐV 2": p2,
@@ -671,9 +697,29 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             matches_parsed.append(m)
 
         df_p = pd.DataFrame(matches_parsed)
-        grouped = df_p.groupby("date", sort=False)
+        
+        # Lấy danh sách ngày có trận đấu để làm lựa chọn (sắp xếp giảm dần)
+        unique_dates = sorted(df_p["date_obj"].unique(), reverse=True)
+        date_options = ["Tất cả các ngày"] + [d.strftime("%d/%m/%Y") for d in unique_dates]
 
-        for match_date, group in grouped:
+        c_filter, _ = st.columns([1.5, 2])
+        with c_filter:
+            selected_history_date = st.selectbox("📅 Lọc xem theo ngày:", date_options)
+
+        # Lọc theo ngày được chọn
+        if selected_history_date != "Tất cả các ngày":
+            df_filtered = df_p[df_p["date"] == selected_history_date]
+        else:
+            df_filtered = df_p
+
+        # Sắp xếp mặc định: Trận mới nhất/Ngày gần nhất lên trên cùng
+        df_filtered = df_filtered.sort_values(by=["date_obj", "row_index"], ascending=[False, False])
+
+        # Gom nhóm theo Ngày để hiển thị
+        grouped_dates = df_filtered["date"].unique()
+
+        for match_date in grouped_dates:
+            group = df_filtered[df_filtered["date"] == match_date]
             st.markdown(f"#### 🗓️ Ngày: `{match_date}`")
 
             for _, m in group.iterrows():
@@ -750,7 +796,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                 if selected_member in [m["p1_1"], m["p1_2"], m["p2_1"], m["p2_2"]]:
                     user_matches.append(m)
 
-        today_str = date.today().strftime("%Y-%m-%d")
+        today_str = format_date_vn(date.today())
         now = datetime.now()
 
         win_today = lose_today = fine_today = 0
@@ -779,16 +825,13 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     lose_today += 1
                     fine_today += bet_amount
 
-            try:
-                dt = datetime.strptime(m["date"], "%Y-%m-%d")
-                if dt.month == now.month and dt.year == now.year:
-                    if is_winner:
-                        win_month += 1
-                    else:
-                        lose_month += 1
-                        fine_month += bet_amount
-            except Exception:
-                pass
+            dt = m["date_obj"]
+            if dt.month == now.month and dt.year == now.year:
+                if is_winner:
+                    win_month += 1
+                else:
+                    lose_month += 1
+                    fine_month += bet_amount
 
         st.write("")
         c_today, c_month = st.columns(2)
@@ -828,9 +871,11 @@ elif menu == "🔍 Tìm kiếm thành viên":
             st.info("VĐV này chưa tham gia trận đấu nào.")
         else:
             df_um = pd.DataFrame(user_matches)
-            grouped = df_um.groupby("date", sort=False)
+            df_um = df_um.sort_values(by=["date_obj"], ascending=False)
+            grouped_dates = df_um["date"].unique()
 
-            for match_date, group in grouped:
+            for match_date in grouped_dates:
+                group = df_um[df_um["date"] == match_date]
                 st.markdown(f"##### 🗓️ Ngày: `{match_date}`")
 
                 for _, m in group.iterrows():

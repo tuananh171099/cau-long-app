@@ -169,15 +169,15 @@ def get_val(row, key, col_idx, default=""):
 def parse_match_row(row):
     match_date = str(get_val(row, "Ngày", 0, "")).strip()
     p1_1 = str(get_val(row, "Đội 1 - VĐV 1", 1, "")).strip()
-    k1_1 = to_int(get_val(row, "Kèo 1_1", 2, 10), 10)
+    k1_1 = to_int(get_val(row, "Kèo 1_1", 2, 1), 1)
     p1_2 = str(get_val(row, "Đội 1 - VĐV 2", 3, "")).strip()
-    k1_2 = to_int(get_val(row, "Kèo 1_2", 4, 10), 10)
+    k1_2 = to_int(get_val(row, "Kèo 1_2", 4, 1), 1)
     score1 = to_int(get_val(row, "Điểm Đội 1", 5, 0), 0)
 
     p2_1 = str(get_val(row, "Đội 2 - VĐV 1", 6, "")).strip()
-    k2_1 = to_int(get_val(row, "Kèo 2_1", 7, 10), 10)
+    k2_1 = to_int(get_val(row, "Kèo 2_1", 7, 1), 1)
     p2_2 = str(get_val(row, "Đội 2 - VĐV 2", 8, "")).strip()
-    k2_2 = to_int(get_val(row, "Kèo 2_2", 9, 10), 10)
+    k2_2 = to_int(get_val(row, "Kèo 2_2", 9, 1), 1)
     score2 = to_int(get_val(row, "Điểm Đội 2", 10, 0), 0)
 
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
@@ -227,7 +227,7 @@ st.markdown(
         <span style="font-size: 2.5rem; margin-right: 15px;">🏸</span>
         <div>
             <h1 style="margin: 0; padding: 0; font-size: 2rem;">CLB Cầu Lông - HVBADMINTON</h1>
-            <p style="margin: 0; color: #6c757d;">Hệ thống theo dõi bảng xếp hạng, trận đấu và quỹ</p>
+            <p style="margin: 0; color: #6c757d;">Hệ thống theo dõi bảng xếp hạng và trận đấu</p>
         </div>
     </div>
 """,
@@ -270,7 +270,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     "Điểm": 0,
                     "Thắng": 0,
                     "Thua": 0,
-                    "Ủng Hộ Quỹ (k)": 0,
+                    "Điểm thành viên": 0,
                     "Tổng Số Trận": 0,
                     "Tỷ Lệ Thắng (%)": 0.0,
                 }
@@ -299,7 +299,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     if l_player in stats:
                         stats[l_player]["Thua"] += 1
                         stats[l_player]["Tổng Số Trận"] += 1
-                        stats[l_player]["Ủng Hộ Quỹ (k)"] += l_bet
+                        stats[l_player]["Điểm thành viên"] += l_bet
 
             for m in stats:
                 total = stats[m]["Tổng Số Trận"]
@@ -314,7 +314,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 "Tên Thành Viên",
                 "Thắng",
                 "Thua",
-                "Ủng Hộ Quỹ (k)",
+                "Điểm thành viên",
                 "Tổng Số Trận",
                 "Tỷ Lệ Thắng (%)",
             ]
@@ -354,7 +354,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.info(f"💡 Không có trận đấu nào diễn ra trong ngày `{selected_date_str}`.")
             else:
                 df_lb_day = calculate_leaderboard(df_day, show_points=False)
-                total_fund_day = df_lb_day["Ủng Hộ Quỹ (k)"].sum()
+                total_fund_day = df_lb_day["Điểm thành viên"].sum()
                 total_matches_day = len(df_day)
 
                 m1, m2 = st.columns(2)
@@ -362,8 +362,8 @@ if menu == "🏆 Bảng Xếp Hạng":
                     st.markdown(
                         f"""
                         <div class="metric-card">
-                            <div class="metric-title">💰 Quỹ Thu Trong Ngày ({selected_date_str})</div>
-                            <div class="metric-value" style="color: #2b8a3e;">{total_fund_day:,.0f}k</div>
+                            <div class="metric-title">🎯 Tổng Điểm ({selected_date_str})</div>
+                            <div class="metric-value" style="color: #2b8a3e;">{total_fund_day:,.0f}</div>
                         </div>
                     """,
                         unsafe_allow_html=True,
@@ -387,8 +387,8 @@ if menu == "🏆 Bảng Xếp Hạng":
                         "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
                             "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
                         ),
-                        "Ủng Hộ Quỹ (k)": st.column_config.NumberColumn(
-                            "Ủng Hộ Quỹ (k)", format="%d k"
+                        "Điểm thành viên": st.column_config.NumberColumn(
+                            "Điểm thành viên", format="%d"
                         ),
                     },
                 )
@@ -414,7 +414,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 df_month = matches_df[matches_df.apply(is_in_month, axis=1)]
 
             df_lb_month = calculate_leaderboard(df_month, show_points=False)
-            total_fund_month = df_lb_month["Ủng Hộ Quỹ (k)"].sum()
+            total_fund_month = df_lb_month["Điểm thành viên"].sum()
             total_matches_month = len(df_month)
 
             m1, m2 = st.columns(2)
@@ -422,8 +422,8 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.markdown(
                     f"""
                     <div class="metric-card">
-                        <div class="metric-title">💰 Tổng Quỹ Thu Được (Tháng {selected_month})</div>
-                        <div class="metric-value" style="color: #2b8a3e;">{total_fund_month:,.0f}k</div>
+                        <div class="metric-title">🎯 Tổng Điểm (Tháng {selected_month})</div>
+                        <div class="metric-value" style="color: #2b8a3e;">{total_fund_month:,.0f}</div>
                     </div>
                 """,
                     unsafe_allow_html=True,
@@ -447,8 +447,8 @@ if menu == "🏆 Bảng Xếp Hạng":
                     "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
                         "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
                     ),
-                    "Ủng Hộ Quỹ (k)": st.column_config.NumberColumn(
-                        "Ủng Hộ Quỹ (k)", format="%d k"
+                    "Điểm thành viên": st.column_config.NumberColumn(
+                        "Điểm thành viên", format="%d"
                     ),
                 },
             )
@@ -487,13 +487,13 @@ elif menu == "📝 Cập nhật trận đấu":
                 with cp1_name:
                     p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
                 with cp1_bet:
-                    k1_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k1_1")
+                    k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
 
                 cp2_name, cp2_bet = st.columns([2.5, 1])
                 with cp2_name:
                     p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
                 with cp2_bet:
-                    k1_2 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k1_2")
+                    k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
 
                 score1 = st.number_input("Điểm Số Đội 1", min_value=0, max_value=30, value=21)
 
@@ -503,13 +503,13 @@ elif menu == "📝 Cập nhật trận đấu":
                 with cp3_name:
                     p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
                 with cp3_bet:
-                    k2_1 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k2_1")
+                    k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
 
                 cp4_name, cp4_bet = st.columns([2.5, 1])
                 with cp4_name:
                     p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
                 with cp4_bet:
-                    k2_2 = st.number_input("Kèo (k)", min_value=0, max_value=50, value=10, step=10, key="k2_2")
+                    k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
 
                 score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19)
 
@@ -540,7 +540,6 @@ elif menu == "📝 Cập nhật trận đấu":
                     }
                     requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
                     
-                    # Khung thông báo thành công nổi bật
                     st.balloons()
                     st.success(
                         f"✅ **ĐÃ LƯU TRẬN ĐẤU THÀNH CÔNG!**\n\n"
@@ -587,10 +586,10 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                         ),
                         unsafe_allow_html=True,
                     )
-                    with st.expander("🔍 Xem chi tiết tiền kèo trận này"):
+                    with st.expander("🔍 Xem chi tiết điểm trận này"):
                         st.write(
-                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']}k`) | {m['p1_2']} (`{m['k1_2']}k`)\n"
-                            f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']}k`) | {m['p2_2']} (`{m['k2_2']}k`)"
+                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`) | {m['p1_2']} (`{m['k1_2']} điểm`)\n"
+                            f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']} điểm`) | {m['p2_2']} (`{m['k2_2']} điểm`)"
                         )
 
                 with col_del:
@@ -634,7 +633,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                 not is_team1 and (m["winner"] == "Đội 2" or m["score2"] > m["score1"])
             )
 
-            bet_amount = 10
+            bet_amount = 1
             if selected_member == m["p1_1"]:
                 bet_amount = m["k1_1"]
             elif selected_member == m["p1_2"]:
@@ -672,7 +671,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     <div class="metric-title">📊 Báo Cáo Hôm Nay ({today_str})</div>
                     <div style="font-size: 1.1rem; margin-top: 5px;">
                         • Thắng: <b>{win_today}</b> | Thua: <b>{lose_today}</b><br>
-                        • Quỹ ủng hộ: <b style="color:#f03e3e;">{fine_today}k</b>
+                        • Điểm tích lũy thua: <b style="color:#f03e3e;">{fine_today}</b>
                     </div>
                 </div>
             """,
@@ -686,7 +685,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     <div class="metric-title">📈 Báo Cáo Tháng {now.month}/{now.year}</div>
                     <div style="font-size: 1.1rem; margin-top: 5px;">
                         • Thắng: <b>{win_month}</b> | Thua: <b>{lose_month}</b><br>
-                        • Quỹ ủng hộ: <b style="color:#f03e3e;">{fine_month}k</b>
+                        • Điểm tích lũy thua: <b style="color:#f03e3e;">{fine_month}</b>
                     </div>
                 </div>
             """,
@@ -717,10 +716,10 @@ elif menu == "🔍 Tìm kiếm thành viên":
                         ),
                         unsafe_allow_html=True,
                     )
-                    with st.expander("🔍 Xem chi tiết tiền kèo trận này"):
+                    with st.expander("🔍 Xem chi tiết điểm trận này"):
                         st.write(
-                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']}k`) | {m['p1_2']} (`{m['k1_2']}k`)\n"
-                            f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']}k`) | {m['p2_2']} (`{m['k2_2']}k`)"
+                            f"• **Đội 1:** {m['p1_1']} (`{m['k1_1']} điểm`) | {m['p1_2']} (`{m['k1_2']} điểm`)\n"
+                            f"• **Đội 2:** {m['p2_1']} (`{m['k2_1']} điểm`) | {m['p2_2']} (`{m['k2_2']} điểm`)"
                         )
 
 

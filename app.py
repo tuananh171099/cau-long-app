@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Khắc phục triệt để lỗi tràn màn hình ngang trên Mobile
+# CSS Ép 3 ô nằm trên ĐÚNG 1 HÀNG nhỏ gọn chuẩn Mobile
 st.markdown(
     """
     <style>
@@ -22,53 +22,61 @@ st.markdown(
     }
 
     .main .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.8rem !important;
         padding-bottom: 2rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-        max-width: 100% !important;
     }
     
-    /* Responsive khung chứa nút bấm */
-    div[data-testid="stHorizontalBlock"] {
-        flex-wrap: wrap !important;
-        gap: 0.4rem !important;
+    /* Ép khung chứa 3 mục luôn nằm trên 1 hàng (Flexbox No-Wrap) */
+    .mobile-row {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 4px !important;
+        width: 100% !important;
+        margin-bottom: 8px !important;
     }
 
-    /* Thu nhỏ nút bấm & Selectbox chuẩn di động */
-    .stButton button, .stPopover button {
-        padding: 4px 8px !important;
-        font-size: 0.8rem !important;
-        height: 38px !important;
-        width: 100% !important;
-    }
+    /* Thu nhỏ tối đa Selectbox & Popover Button */
     div[data-baseweb="select"] > div {
-        min-height: 38px !important;
-        font-size: 0.85rem !important;
+        min-height: 36px !important;
+        font-size: 0.8rem !important;
+        padding: 0 4px !important;
     }
     
-    /* Responsive Metric Card */
+    .stPopover button {
+        padding: 2px 4px !important;
+        font-size: 0.85rem !important;
+        height: 36px !important;
+        min-width: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Card chỉ số gọn cho di động */
     .metric-card {
         background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
         border: 1px solid #e9ecef;
         border-radius: 8px;
-        padding: 8px 12px;
+        padding: 8px 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
     .metric-title {
-        font-size: 0.7rem;
+        font-size: 0.68rem;
         color: #6c757d;
         font-weight: 600;
         margin-bottom: 2px;
         text-transform: uppercase;
     }
     .metric-value {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #212529;
     }
     
-    /* Scoreboard gọn nhẹ trên di động */
+    /* Scoreboard */
     .scoreboard-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -335,14 +343,13 @@ def render_scoreboard_html(team1_str, score1, team2_str, score2, is_team1_winner
     """
 
 
-# Header compact trên Mobile
+# Header
 st.markdown(
     """
-    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 1.6rem; margin-right: 8px;">🏸</span>
+    <div style="display: flex; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 1.5rem; margin-right: 6px;">🏸</span>
         <div>
-            <h3 style="margin: 0; padding: 0; font-size: 1.2rem;">HVBADMINTON</h3>
-            <p style="margin: 0; color: #6c757d; font-size: 0.7rem;">Bảng Xếp Hạng & Trận Đấu</p>
+            <h3 style="margin: 0; padding: 0; font-size: 1.1rem;">HVBADMINTON</h3>
         </div>
     </div>
 """,
@@ -374,17 +381,23 @@ if menu == "🏆 Bảng Xếp Hạng":
 
     seasons_list = [s["name"] for s in seasons_info]
     
-    selected_season_name = st.selectbox("Mùa Giải:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0, label_visibility="collapsed")
+    # 🌟 Ép 3 mục đứng chung 1 hàng trên điện thoại (Tỉ lệ 3.2 : 1 : 1)
+    col_s, col_e, col_p = st.columns([3.2, 1, 1])
+
+    with col_s:
+        selected_season_name = st.selectbox(
+            "Mùa Giải:", 
+            seasons_list, 
+            index=len(seasons_list) - 1 if seasons_list else 0, 
+            label_visibility="collapsed"
+        )
 
     curr_s_item = next((s for s in seasons_info if s["name"] == selected_season_name), seasons_info[-1])
 
-    # Hàng 2 nút điều khiển mùa (gọn gàng 50-50 trên Mobile)
-    col_e, col_p = st.columns(2)
-
     with col_e:
-        with st.popover("🛑 Kết thúc", use_container_width=True):
+        with st.popover("🛑", use_container_width=True):
             st.markdown(f"### 🛑 Kết Thúc\n**{selected_season_name}**")
-            end_s_date = st.date_input("🗓️ Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
+            end_s_date = st.date_input("🗓️ Chọn Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
             confirm_end = st.button("Đồng ý kết thúc mùa", use_container_width=True)
 
             if confirm_end:
@@ -401,7 +414,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.rerun()
 
     with col_p:
-        with st.popover("⚙️ Tuỳ chỉnh", use_container_width=True):
+        with st.popover("⚙️", use_container_width=True):
             st.markdown("### ➕ Thêm Mùa Mới")
             with st.form("add_season_form", clear_on_submit=True):
                 new_s_name = st.text_input("Tên Mùa Giải Mới:", placeholder=f"Mùa {len(seasons_list)+1} (2026)")

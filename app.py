@@ -15,18 +15,13 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Chỉnh font và padding tổng thể */
     .main .block-container {
         padding-top: 2rem;
         padding-bottom: 3rem;
     }
-    
-    /* Style cho Sidebar */
     [data-testid="stSidebar"] {
         background-color: #f8f9fa;
     }
-    
-    /* Thẻ Thống kê (Metric Cards Custom) */
     .metric-card {
         background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
         border: 1px solid #e9ecef;
@@ -52,8 +47,6 @@ st.markdown(
         font-weight: 700;
         color: #212529;
     }
-
-    /* Đội 1 vs Đội 2 Card trong Cập nhật trận đấu */
     .team-card-1 {
         background-color: #e7f5ff;
         border-left: 5px solid #1c7ed6;
@@ -68,14 +61,12 @@ st.markdown(
         border-radius: 8px;
         margin-bottom: 10px;
     }
-    
-    /* SCOREBOARD KHUNG TRẬN ĐẤU THEO KIỂU THỂ THAO */
     .scoreboard-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         overflow: hidden;
-        margin-bottom: 12px;
+        margin-bottom: 6px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
     .scoreboard-row {
@@ -138,7 +129,7 @@ st.markdown(
 )
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4QXiNzVXTDLd9ltpCiMElur1F29Wi_xV6w5jMx-ZFlQ25nkvOdUI5OvpJU7469UHnjw/exec"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLTDDJVlB5qx7Kb03Bdv0oQn8UE2miGRqmIpjQ5OeNcfF2MpBBi0tIdVIY1lo82z3ztQ/exec"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):
@@ -169,17 +160,17 @@ def load_data():
 members_list, matches_df = load_data()
 
 
-# Hàm lấy tiền kèo chính xác, nếu không nhập hoặc dòng cũ thì lấy 10k
-def get_bet_val(row, col_name, default=10):
+# Trích xuất giá trị Kèo chuẩn xác
+def extract_bet(row, col_name):
     if col_name in row and pd.notna(row[col_name]):
         try:
             return int(float(row[col_name]))
         except Exception:
-            return default
-    return default
+            return 10
+    return 10
 
 
-# Hàm phụ trợ dựng khung Scoreboard chuẩn thể thao
+# Dựng khung Scoreboard
 def render_scoreboard_html(
     team1_str, score1, team2_str, score2, is_team1_winner
 ):
@@ -207,7 +198,7 @@ def render_scoreboard_html(
     return html
 
 
-# Header chính ứng dụng
+# Header chính
 st.markdown(
     """
     <div style="display: flex; align-items: center; margin-bottom: 20px;">
@@ -221,7 +212,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Thanh Menu Sidebar
+# Sidebar
 with st.sidebar:
     st.image(
         "https://cdn-icons-png.flaticon.com/512/2906/2906206.png", width=80
@@ -273,10 +264,10 @@ if menu == "🏆 Bảng Xếp Hạng":
                 p2_1 = row.get("Đội 2 - VĐV 1")
                 p2_2 = row.get("Đội 2 - VĐV 2")
 
-                k1_1 = get_bet_val(row, "Kèo 1_1")
-                k1_2 = get_bet_val(row, "Kèo 1_2")
-                k2_1 = get_bet_val(row, "Kèo 2_1")
-                k2_2 = get_bet_val(row, "Kèo 2_2")
+                k1_1 = extract_bet(row, "Kèo 1_1")
+                k1_2 = extract_bet(row, "Kèo 1_2")
+                k2_1 = extract_bet(row, "Kèo 2_1")
+                k2_2 = extract_bet(row, "Kèo 2_2")
 
                 if row.get("Đội Thắng") == "Đội 1":
                     winners = [p1_1, p1_2]
@@ -285,14 +276,12 @@ if menu == "🏆 Bảng Xếp Hạng":
                     winners = [p2_1, p2_2]
                     losers = [(p1_1, k1_1), (p1_2, k1_2)]
 
-                # Đội thắng: +3 điểm, +1 trận thắng
                 for w in winners:
                     if pd.notna(w) and w in stats:
                         stats[w]["Điểm"] += 3
                         stats[w]["Thắng"] += 1
                         stats[w]["Tổng Số Trận"] += 1
 
-                # Đội thua: +1 trận thua, CỘNG CHÍNH XÁC TIỀN KÈO CỦA VĐV ĐÓ VÀO QUỸ
                 for l_player, l_bet in losers:
                     if pd.notna(l_player) and l_player in stats:
                         stats[l_player]["Thua"] += 1
@@ -340,7 +329,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # --- Tab Theo Ngày ---
+        # Tab Theo Ngày
         with tab_day:
             c_date, _ = st.columns([1, 2])
             with c_date:
@@ -399,7 +388,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     },
                 )
 
-        # --- Tab Theo Tháng ---
+        # Tab Theo Tháng
         with tab_month:
             c1, c2 = st.columns(2)
             with c1:
@@ -467,7 +456,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 },
             )
 
-        # --- Tab Toàn Thời Gian ---
+        # Tab Toàn Thời Gian
         with tab_all:
             st.write("**Bảng xếp hạng cộng dồn toàn thời gian**")
             st.dataframe(
@@ -495,7 +484,6 @@ elif menu == "📝 Cập nhật trận đấu":
 
             col1, col2 = st.columns(2)
 
-            # --- ĐỘI 1 ---
             with col1:
                 st.markdown(
                     "<div class='team-card-1'><b>🔵 ĐỘI 1</b></div>",
@@ -523,7 +511,6 @@ elif menu == "📝 Cập nhật trận đấu":
                     "Điểm Số Đội 1", min_value=0, max_value=30, value=21
                 )
 
-            # --- ĐỘI 2 ---
             with col2:
                 st.markdown(
                     "<div class='team-card-2'><b>🔴 ĐỘI 2</b></div>",
@@ -598,50 +585,59 @@ elif menu == "📝 Cập nhật trận đấu":
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
 
-    if matches_df.empty:
+    if matches_df.empty or "Ngày" not in matches_df.columns:
         st.info("Chưa có trận đấu nào trong hệ thống.")
     else:
-        st.caption("Danh sách trận đấu được hiển thị theo giao diện Scoreboard thi đấu:")
+        # Nhóm danh sách theo ngày (Không ghi lặp lại tiêu đề Ngày)
+        grouped = matches_df.groupby("Ngày", sort=False)
 
-        for idx, row in matches_df.iterrows():
-            col_info, col_del = st.columns([6, 1])
+        for match_date, group in grouped:
+            st.markdown(f"#### 🗓️ Ngày: `{match_date}`")
 
-            p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
-            p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
+            for idx, row in group.iterrows():
+                p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
+                p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
-            k1_1 = f" ({get_bet_val(row, 'Kèo 1_1')}k)"
-            k1_2 = f" ({get_bet_val(row, 'Kèo 1_2')}k)"
-            k2_1 = f" ({get_bet_val(row, 'Kèo 2_1')}k)"
-            k2_2 = f" ({get_bet_val(row, 'Kèo 2_2')}k)"
+                k1_1 = extract_bet(row, "Kèo 1_1")
+                k1_2 = extract_bet(row, "Kèo 1_2")
+                k2_1 = extract_bet(row, "Kèo 2_1")
+                k2_2 = extract_bet(row, "Kèo 2_2")
 
-            team1_str = f"{p1_1}{k1_1} / {p1_2}{k1_2}"
-            team2_str = f"{p2_1}{k2_1} / {p2_2}{k2_2}"
+                # Tên VĐV gọn gàng không dính tiền
+                team1_str = f"{p1_1} / {p1_2}"
+                team2_str = f"{p2_1} / {p2_2}"
 
-            score1 = row.get("Điểm Đội 1", 0)
-            score2 = row.get("Điểm Đội 2", 0)
-            is_team1_winner = row.get("Đội Thắng") == "Đội 1"
+                score1 = row.get("Điểm Đội 1", 0)
+                score2 = row.get("Điểm Đội 2", 0)
+                is_team1_winner = row.get("Đội Thắng") == "Đội 1"
 
-            with col_info:
-                st.caption(f"📅 **Ngày:** `{row.get('Ngày')}`")
-                st.markdown(
-                    render_scoreboard_html(
-                        team1_str, score1, team2_str, score2, is_team1_winner
-                    ),
-                    unsafe_allow_html=True,
-                )
+                col_info, col_del = st.columns([6, 1])
 
-            with col_del:
-                st.write("")
-                st.write("")
-                sheet_row = idx + 2
-                if st.button("🗑️ Xóa", key=f"del_match_{idx}"):
-                    requests.post(
-                        SCRIPT_URL,
-                        json={"action": "delete_match", "row_index": sheet_row},
+                with col_info:
+                    st.markdown(
+                        render_scoreboard_html(
+                            team1_str, score1, team2_str, score2, is_team1_winner
+                        ),
+                        unsafe_allow_html=True,
                     )
-                    st.toast("Đã xóa trận đấu thành công!", icon="✅")
-                    st.cache_data.clear()
-                    st.rerun()
+                    
+                    # Bấm vào xem Chi tiết Tiền Cược
+                    with st.expander("🔍 Xem chi tiết tiền kèo & Xóa trận này"):
+                        st.write(
+                            f"• **Đội 1:** {p1_1} (`{k1_1}k`) | {p1_2} (`{k1_2}k`)\n"
+                            f"• **Đội 2:** {p2_1} (`{k2_1}k`) | {p2_2} (`{k2_2}k`)"
+                        )
+
+                with col_del:
+                    sheet_row = idx + 2
+                    if st.button("🗑️ Xóa", key=f"del_match_{idx}"):
+                        requests.post(
+                            SCRIPT_URL,
+                            json={"action": "delete_match", "row_index": sheet_row},
+                        )
+                        st.toast("Đã xóa trận đấu thành công!", icon="✅")
+                        st.cache_data.clear()
+                        st.rerun()
 
 
 # ==========================================
@@ -690,16 +686,15 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     not is_team1 and row.get("Đội Thắng") == "Đội 2"
                 )
 
-                # Lấy đúng tiền phạt kèo cá nhân
                 bet_amount = 10
                 if selected_member == p1_1:
-                    bet_amount = get_bet_val(row, "Kèo 1_1")
+                    bet_amount = extract_bet(row, "Kèo 1_1")
                 elif selected_member == p1_2:
-                    bet_amount = get_bet_val(row, "Kèo 1_2")
+                    bet_amount = extract_bet(row, "Kèo 1_2")
                 elif selected_member == p2_1:
-                    bet_amount = get_bet_val(row, "Kèo 2_1")
+                    bet_amount = extract_bet(row, "Kèo 2_1")
                 elif selected_member == p2_2:
-                    bet_amount = get_bet_val(row, "Kèo 2_2")
+                    bet_amount = extract_bet(row, "Kèo 2_2")
 
                 if row.get("Ngày") == today_str:
                     if is_winner:
@@ -764,13 +759,13 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
                     p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
-                    k1_1 = f" ({get_bet_val(row, 'Kèo 1_1')}k)"
-                    k1_2 = f" ({get_bet_val(row, 'Kèo 1_2')}k)"
-                    k2_1 = f" ({get_bet_val(row, 'Kèo 2_1')}k)"
-                    k2_2 = f" ({get_bet_val(row, 'Kèo 2_2')}k)"
+                    k1_1 = extract_bet(row, "Kèo 1_1")
+                    k1_2 = extract_bet(row, "Kèo 1_2")
+                    k2_1 = extract_bet(row, "Kèo 2_1")
+                    k2_2 = extract_bet(row, "Kèo 2_2")
 
-                    team1_str = f"{p1_1}{k1_1} / {p1_2}{k1_2}"
-                    team2_str = f"{p2_1}{k2_1} / {p2_2}{k2_2}"
+                    team1_str = f"{p1_1} / {p1_2}"
+                    team2_str = f"{p2_1} / {p2_2}"
 
                     score1 = row.get("Điểm Đội 1", 0)
                     score2 = row.get("Điểm Đội 2", 0)
@@ -786,6 +781,11 @@ elif menu == "🔍 Tìm kiếm thành viên":
                         ),
                         unsafe_allow_html=True,
                     )
+                    with st.expander("🔍 Xem chi tiết tiền kèo trận này"):
+                        st.write(
+                            f"• **Đội 1:** {p1_1} (`{k1_1}k`) | {p1_2} (`{k1_2}k`)\n"
+                            f"• **Đội 2:** {p2_1} (`{k2_1}k`) | {p2_2} (`{k2_2}k`)"
+                        )
 
 
 # ==========================================

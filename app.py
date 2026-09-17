@@ -11,51 +11,55 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Ép 3 ô nằm trên ĐÚNG 1 HÀNG nhỏ gọn chuẩn Mobile
+# CSS ÉP CỨNG 3 MỤC LÊN CÙNG 1 HÀNG TRÊN MOBILE
 st.markdown(
     """
     <style>
-    /* Khóa cuộn ngang toàn trang */
-    html, body, [data-testid="stAppViewContainer"] {
-        max-width: 100vw !important;
-        overflow-x: hidden !important;
-    }
-
-    .main .block-container {
-        padding-top: 0.8rem !important;
-        padding-bottom: 2rem !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-    }
-    
-    /* Ép khung chứa 3 mục luôn nằm trên 1 hàng (Flexbox No-Wrap) */
-    .mobile-row {
+    /* 1. Tắt cơ chế rớt dòng mặc định của Streamlit trên Mobile */
+    div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
+        flex-wrap: nowrap !important;
         align-items: center !important;
         gap: 4px !important;
         width: 100% !important;
-        margin-bottom: 8px !important;
     }
 
-    /* Thu nhỏ tối đa Selectbox & Popover Button */
+    /* 2. Chia tỉ lệ độ rộng % trực tiếp cho 3 cột */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) {
+        flex: 0 0 44% !important;
+        min-width: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(2) {
+        flex: 0 0 28% !important;
+        min-width: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] > div:nth-child(3) {
+        flex: 0 0 28% !important;
+        min-width: 0 !important;
+    }
+
+    /* 3. Tối ưu ô Selectbox & Nút bấm co giãn vừa màn hình */
     div[data-baseweb="select"] > div {
-        min-height: 36px !important;
-        font-size: 0.8rem !important;
-        padding: 0 4px !important;
+        min-height: 38px !important;
+        font-size: 0.75rem !important;
+        padding: 0 2px !important;
     }
     
     .stPopover button {
-        padding: 2px 4px !important;
-        font-size: 0.85rem !important;
-        height: 36px !important;
-        min-width: 38px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        padding: 2px 2px !important;
+        font-size: 0.72rem !important;
+        height: 38px !important;
+        width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
-    /* Card chỉ số gọn cho di động */
+    /* 4. Layout chung */
+    .main .block-container {
+        padding: 0.8rem 0.4rem !important;
+    }
     .metric-card {
         background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
         border: 1px solid #e9ecef;
@@ -75,8 +79,6 @@ st.markdown(
         font-weight: 700;
         color: #212529;
     }
-    
-    /* Scoreboard */
     .scoreboard-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -381,8 +383,8 @@ if menu == "🏆 Bảng Xếp Hạng":
 
     seasons_list = [s["name"] for s in seasons_info]
     
-    # 🌟 Ép 3 mục đứng chung 1 hàng trên điện thoại (Tỉ lệ 3.2 : 1 : 1)
-    col_s, col_e, col_p = st.columns([3.2, 1, 1])
+    # Ép 3 ô hiển thị đầy đủ tên trên CÙNG 1 HÀNG trên điện thoại
+    col_s, col_e, col_p = st.columns([44, 28, 28])
 
     with col_s:
         selected_season_name = st.selectbox(
@@ -395,7 +397,7 @@ if menu == "🏆 Bảng Xếp Hạng":
     curr_s_item = next((s for s in seasons_info if s["name"] == selected_season_name), seasons_info[-1])
 
     with col_e:
-        with st.popover("🛑", use_container_width=True):
+        with st.popover(f"🛑 Kết thúc {selected_season_name}", use_container_width=True):
             st.markdown(f"### 🛑 Kết Thúc\n**{selected_season_name}**")
             end_s_date = st.date_input("🗓️ Chọn Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
             confirm_end = st.button("Đồng ý kết thúc mùa", use_container_width=True)
@@ -414,7 +416,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.rerun()
 
     with col_p:
-        with st.popover("⚙️", use_container_width=True):
+        with st.popover("⚙️ Tùy Chỉnh Mùa", use_container_width=True):
             st.markdown("### ➕ Thêm Mùa Mới")
             with st.form("add_season_form", clear_on_submit=True):
                 new_s_name = st.text_input("Tên Mùa Giải Mới:", placeholder=f"Mùa {len(seasons_list)+1} (2026)")

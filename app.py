@@ -5,7 +5,7 @@ import streamlit as st
 
 # Cấu hình trang với Layout Rộng & Title
 st.set_page_config(
-    page_title="Badminton Club Manager",
+    page_title="CLB Cầu Lông - HVBADMINTON",
     page_icon="🏸",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -214,7 +214,7 @@ st.markdown(
     <div style="display: flex; align-items: center; margin-bottom: 20px;">
         <span style="font-size: 2.5rem; margin-right: 15px;">🏸</span>
         <div>
-            <h1 style="margin: 0; padding: 0; font-size: 2rem;">CLB Cầu Lông - Dashboard</h1>
+            <h1 style="margin: 0; padding: 0; font-size: 2rem;">CLB Cầu Lông - HVBADMINTON</h1>
             <p style="margin: 0; color: #6c757d;">Hệ thống theo dõi bảng xếp hạng, trận đấu và quỹ phạt</p>
         </div>
     </div>
@@ -227,26 +227,26 @@ with st.sidebar:
     st.image(
         "https://cdn-icons-png.flaticon.com/512/2906/2906206.png", width=80
     )
-    st.title("Menu Điều Hướng")
+    st.title("Menu")
     menu = st.radio(
         "Chọn chức năng:",
         [
-            "🏆 Leaderboard & Quỹ",
+            "🏆 Bảng Xếp Hạng",
             "📝 Cập nhật trận đấu",
-            "🛠️ Lịch sử & Quản lý trận",
+            "🛠️ Lịch sử các trận đấu",
             "🔍 Tìm kiếm thành viên",
             "⚙️ Quản lý thành viên",
         ],
     )
     st.markdown("---")
-    st.caption("Developed with Streamlit & Google Sheets")
+    st.caption("✨ **Created by NTA**")
 
 
 # ==========================================
-# 1. LEADERBOARD & QUỸ
+# 1. BẢNG XẾP HẠNG
 # ==========================================
-if menu == "🏆 Leaderboard & Quỹ":
-    st.subheader("🏆 Bảng Xếp Hạng & Quỹ Thua Trận")
+if menu == "🏆 Bảng Xếp Hạng":
+    st.subheader("🏆 Bảng Xếp Hạng")
 
     if matches_df.empty:
         st.info("💡 Chưa có dữ liệu trận đấu nào. Hãy vào phần 'Cập nhật trận đấu' để ghi nhận trận đầu tiên!")
@@ -330,7 +330,7 @@ if menu == "🏆 Leaderboard & Quỹ":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # --- Tab Theo Ngày (Có chọn ngày) ---
+        # --- Tab Theo Ngày ---
         with tab_day:
             c_date, _ = st.columns([1, 2])
             with c_date:
@@ -548,10 +548,10 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ & QUẢN LÝ TRẬN
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU
 # ==========================================
-elif menu == "🛠️ Lịch sử & Quản lý trận":
-    st.subheader("🛠️ Lịch Sử & Quản Lý Trận Đấu")
+elif menu == "🛠️ Lịch sử các trận đấu":
+    st.subheader("🛠️ Lịch Sử Các Trận Đấu")
 
     if matches_df.empty:
         st.info("Chưa có trận đấu nào trong hệ thống.")

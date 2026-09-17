@@ -137,8 +137,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-SHEET_URL = "THAY_LINK_GOOGLE_SHEET_CUA_BAN_VAO_DAY"
-SCRIPT_URL = "THAY_LINK_SCRIPT_VAO_DAY"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4QXiNzVXTDLd9ltpCiMElur1F29Wi_xV6w5jMx-ZFlQ25nkvOdUI5OvpJU7469UHnjw/exec"
 
 
 def get_sheet_csv_url(url, sheet_name="Sheet1"):

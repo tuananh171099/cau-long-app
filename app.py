@@ -245,8 +245,8 @@ with st.sidebar:
 # ==========================================
 # 1. LEADERBOARD & QUỸ
 # ==========================================
-if menu == "🏆 Leaderboard & Quỹ":
-    st.subheader("🏆 Bảng Xếp Hạng & Quỹ Thua Trận")
+if menu == "🏆 Bảng Xếp Hạng":
+    st.subheader("🏆 Bảng Xếp Hạng ")
 
     if matches_df.empty:
         st.info("💡 Chưa có dữ liệu trận đấu nào. Hãy vào phần 'Cập nhật trận đấu' để ghi nhận trận đầu tiên!")

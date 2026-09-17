@@ -161,22 +161,7 @@ def load_data():
         url_matches = get_sheet_csv_url(SHEET_URL, "Matches")
         df_matches = pd.read_csv(url_matches)
     except Exception:
-        df_matches = pd.DataFrame(
-            columns=[
-                "Ngày",
-                "Đội 1 - VĐV 1",
-                "Kèo 1_1",
-                "Đội 1 - VĐV 2",
-                "Kèo 1_2",
-                "Điểm Đội 1",
-                "Đội 2 - VĐV 1",
-                "Kèo 2_1",
-                "Đội 2 - VĐV 2",
-                "Kèo 2_2",
-                "Điểm Đội 2",
-                "Đội Thắng",
-            ]
-        )
+        df_matches = pd.DataFrame()
 
     return members, df_matches
 
@@ -184,13 +169,13 @@ def load_data():
 members_list, matches_df = load_data()
 
 
-# Hàm chuyển đổi an toàn giá trị Kèo sang số nguyên
-def get_bet_val(val, default=10):
-    try:
-        if pd.notna(val):
-            return int(float(val))
-    except Exception:
-        pass
+# Hàm lấy tiền kèo chính xác, nếu không nhập hoặc dòng cũ thì lấy 10k
+def get_bet_val(row, col_name, default=10):
+    if col_name in row and pd.notna(row[col_name]):
+        try:
+            return int(float(row[col_name]))
+        except Exception:
+            return default
     return default
 
 
@@ -288,28 +273,28 @@ if menu == "🏆 Bảng Xếp Hạng":
                 p2_1 = row.get("Đội 2 - VĐV 1")
                 p2_2 = row.get("Đội 2 - VĐV 2")
 
-                k1_1 = get_bet_val(row.get("Kèo 1_1"))
-                k1_2 = get_bet_val(row.get("Kèo 1_2"))
-                k2_1 = get_bet_val(row.get("Kèo 2_1"))
-                k2_2 = get_bet_val(row.get("Kèo 2_2"))
+                k1_1 = get_bet_val(row, "Kèo 1_1")
+                k1_2 = get_bet_val(row, "Kèo 1_2")
+                k2_1 = get_bet_val(row, "Kèo 2_1")
+                k2_2 = get_bet_val(row, "Kèo 2_2")
 
-                if row["Đội Thắng"] == "Đội 1":
+                if row.get("Đội Thắng") == "Đội 1":
                     winners = [p1_1, p1_2]
                     losers = [(p2_1, k2_1), (p2_2, k2_2)]
                 else:
                     winners = [p2_1, p2_2]
                     losers = [(p1_1, k1_1), (p1_2, k1_2)]
 
-                # Cộng điểm và số trận thắng
+                # Đội thắng: +3 điểm, +1 trận thắng
                 for w in winners:
-                    if w in stats:
+                    if pd.notna(w) and w in stats:
                         stats[w]["Điểm"] += 3
                         stats[w]["Thắng"] += 1
                         stats[w]["Tổng Số Trận"] += 1
 
-                # Đội thua: Cộng số trận thua & CỘNG ĐÚNG SỐ TIỀN KÈO VÀO QUỸ
+                # Đội thua: +1 trận thua, CỘNG CHÍNH XÁC TIỀN KÈO CỦA VĐV ĐÓ VÀO QUỸ
                 for l_player, l_bet in losers:
-                    if l_player in stats:
+                    if pd.notna(l_player) and l_player in stats:
                         stats[l_player]["Thua"] += 1
                         stats[l_player]["Tổng Số Trận"] += 1
                         stats[l_player]["Ủng Hộ Quỹ (k)"] += l_bet
@@ -365,7 +350,11 @@ if menu == "🏆 Bảng Xếp Hạng":
                 )
 
             selected_date_str = selected_date.strftime("%Y-%m-%d")
-            df_day = matches_df[matches_df["Ngày"] == selected_date_str]
+            df_day = (
+                matches_df[matches_df["Ngày"] == selected_date_str]
+                if "Ngày" in matches_df.columns
+                else pd.DataFrame()
+            )
 
             if df_day.empty:
                 st.info(f"💡 Không có trận đấu nào diễn ra trong ngày `{selected_date_str}`.")
@@ -428,12 +417,15 @@ if menu == "🏆 Bảng Xếp Hạng":
                     value=datetime.now().month,
                 )
 
-            df_temp = matches_df.copy()
-            df_temp["Ngày_dt"] = pd.to_datetime(df_temp["Ngày"])
-            df_month = df_temp[
-                (df_temp["Ngày_dt"].dt.month == selected_month)
-                & (df_temp["Ngày_dt"].dt.year == selected_year)
-            ]
+            if "Ngày" in matches_df.columns:
+                df_temp = matches_df.copy()
+                df_temp["Ngày_dt"] = pd.to_datetime(df_temp["Ngày"])
+                df_month = df_temp[
+                    (df_temp["Ngày_dt"].dt.month == selected_month)
+                    & (df_temp["Ngày_dt"].dt.year == selected_year)
+                ]
+            else:
+                df_month = pd.DataFrame()
 
             df_lb_month = calculate_leaderboard(df_month, show_points=False)
             total_fund_month = df_lb_month["Ủng Hộ Quỹ (k)"].sum()
@@ -509,7 +501,7 @@ elif menu == "📝 Cập nhật trận đấu":
                     "<div class='team-card-1'><b>🔵 ĐỘI 1</b></div>",
                     unsafe_allow_html=True,
                 )
-                
+
                 cp1_name, cp1_bet = st.columns([2.5, 1])
                 with cp1_name:
                     p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
@@ -537,7 +529,7 @@ elif menu == "📝 Cập nhật trận đấu":
                     "<div class='team-card-2'><b>🔴 ĐỘI 2</b></div>",
                     unsafe_allow_html=True,
                 )
-                
+
                 cp3_name, cp3_bet = st.columns([2.5, 1])
                 with cp3_name:
                     p3 = st.selectbox(
@@ -617,20 +609,20 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
             p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
-            k1_1 = f" ({get_bet_val(row.get('Kèo 1_1'))}k)"
-            k1_2 = f" ({get_bet_val(row.get('Kèo 1_2'))}k)"
-            k2_1 = f" ({get_bet_val(row.get('Kèo 2_1'))}k)"
-            k2_2 = f" ({get_bet_val(row.get('Kèo 2_2'))}k)"
+            k1_1 = f" ({get_bet_val(row, 'Kèo 1_1')}k)"
+            k1_2 = f" ({get_bet_val(row, 'Kèo 1_2')}k)"
+            k2_1 = f" ({get_bet_val(row, 'Kèo 2_1')}k)"
+            k2_2 = f" ({get_bet_val(row, 'Kèo 2_2')}k)"
 
             team1_str = f"{p1_1}{k1_1} / {p1_2}{k1_2}"
             team2_str = f"{p2_1}{k2_1} / {p2_2}{k2_2}"
-            
-            score1 = row["Điểm Đội 1"]
-            score2 = row["Điểm Đội 2"]
-            is_team1_winner = row["Đội Thắng"] == "Đội 1"
+
+            score1 = row.get("Điểm Đội 1", 0)
+            score2 = row.get("Điểm Đội 2", 0)
+            is_team1_winner = row.get("Đội Thắng") == "Đội 1"
 
             with col_info:
-                st.caption(f"📅 **Ngày:** `{row['Ngày']}`")
+                st.caption(f"📅 **Ngày:** `{row.get('Ngày')}`")
                 st.markdown(
                     render_scoreboard_html(
                         team1_str, score1, team2_str, score2, is_team1_winner
@@ -672,11 +664,11 @@ elif menu == "🔍 Tìm kiếm thành viên":
             | (df_matches["Đội 1 - VĐV 2"] == selected_member)
             | (df_matches["Đội 2 - VĐV 1"] == selected_member)
             | (df_matches["Đội 2 - VĐV 2"] == selected_member)
-        ) if not df_matches.empty else pd.Series([], dtype=bool)
+        ) if not df_matches.empty and "Đội 1 - VĐV 1" in df_matches.columns else pd.Series([], dtype=bool)
 
         user_matches = (
             df_matches[filter_condition].copy()
-            if not df_matches.empty
+            if not df_matches.empty and not filter_condition.empty
             else pd.DataFrame()
         )
 
@@ -694,22 +686,22 @@ elif menu == "🔍 Tìm kiếm thành viên":
                 p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
                 is_team1 = selected_member in [p1_1, p1_2]
-                is_winner = (is_team1 and row["Đội Thắng"] == "Đội 1") or (
-                    not is_team1 and row["Đội Thắng"] == "Đội 2"
+                is_winner = (is_team1 and row.get("Đội Thắng") == "Đội 1") or (
+                    not is_team1 and row.get("Đội Thắng") == "Đội 2"
                 )
 
                 # Lấy đúng tiền phạt kèo cá nhân
                 bet_amount = 10
                 if selected_member == p1_1:
-                    bet_amount = get_bet_val(row.get("Kèo 1_1"))
+                    bet_amount = get_bet_val(row, "Kèo 1_1")
                 elif selected_member == p1_2:
-                    bet_amount = get_bet_val(row.get("Kèo 1_2"))
+                    bet_amount = get_bet_val(row, "Kèo 1_2")
                 elif selected_member == p2_1:
-                    bet_amount = get_bet_val(row.get("Kèo 2_1"))
+                    bet_amount = get_bet_val(row, "Kèo 2_1")
                 elif selected_member == p2_2:
-                    bet_amount = get_bet_val(row.get("Kèo 2_2"))
+                    bet_amount = get_bet_val(row, "Kèo 2_2")
 
-                if row["Ngày"] == today_str:
+                if row.get("Ngày") == today_str:
                     if is_winner:
                         win_today += 1
                     else:
@@ -772,17 +764,17 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     p1_1, p1_2 = row.get("Đội 1 - VĐV 1"), row.get("Đội 1 - VĐV 2")
                     p2_1, p2_2 = row.get("Đội 2 - VĐV 1"), row.get("Đội 2 - VĐV 2")
 
-                    k1_1 = f" ({get_bet_val(row.get('Kèo 1_1'))}k)"
-                    k1_2 = f" ({get_bet_val(row.get('Kèo 1_2'))}k)"
-                    k2_1 = f" ({get_bet_val(row.get('Kèo 2_1'))}k)"
-                    k2_2 = f" ({get_bet_val(row.get('Kèo 2_2'))}k)"
+                    k1_1 = f" ({get_bet_val(row, 'Kèo 1_1')}k)"
+                    k1_2 = f" ({get_bet_val(row, 'Kèo 1_2')}k)"
+                    k2_1 = f" ({get_bet_val(row, 'Kèo 2_1')}k)"
+                    k2_2 = f" ({get_bet_val(row, 'Kèo 2_2')}k)"
 
                     team1_str = f"{p1_1}{k1_1} / {p1_2}{k1_2}"
                     team2_str = f"{p2_1}{k2_1} / {p2_2}{k2_2}"
 
-                    score1 = row["Điểm Đội 1"]
-                    score2 = row["Điểm Đội 2"]
-                    is_team1_winner = row["Đội Thắng"] == "Đội 1"
+                    score1 = row.get("Điểm Đội 1", 0)
+                    score2 = row.get("Điểm Đội 2", 0)
+                    is_team1_winner = row.get("Đội Thắng") == "Đội 1"
 
                     st.markdown(
                         render_scoreboard_html(

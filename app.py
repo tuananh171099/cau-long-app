@@ -118,16 +118,14 @@ st.markdown(
 )
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbn2We-c4JNS7WFe3aJeHZP5pzohHugzFvKlnmy9jT2vmMy1nfwuqtOhrMx_n69KvP0g/exec"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZGD4GKHo9cjMhWyD0-RDq-c7DuWLWnGwBuI77NDCOmGh15fSIG5tX3o9pbl6zaKEhiQ/exec"
 
 
 def format_date_vn(dt_val):
-    """Chuyển đổi các định dạng ngày về chuẩn dd/mm/yyyy"""
     if not dt_val:
         return ""
     if isinstance(dt_val, (date, datetime)):
         return dt_val.strftime("%d/%m/%Y")
-    
     val_str = str(dt_val).strip()
     for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y"):
         try:
@@ -138,7 +136,6 @@ def format_date_vn(dt_val):
 
 
 def parse_date_obj(dt_val):
-    """Parse ngày về datetime object để sắp xếp"""
     if isinstance(dt_val, (date, datetime)):
         return datetime.combine(dt_val, datetime.min.time())
     val_str = str(dt_val).strip()
@@ -201,9 +198,48 @@ def get_val(row, key, col_idx, default=""):
     return default
 
 
+def parse_seasons_dict(df_s):
+    seasons_data = []
+    if not df_s.empty:
+        for _, r in df_s.iterrows():
+            name = str(get_val(r, "Tên Mùa", 0, "")).strip()
+            start_str = format_date_vn(get_val(r, "Ngày Bắt Đầu", 1, ""))
+            end_str = format_date_vn(get_val(r, "Ngày Kết Thúc", 2, ""))
+            status = str(get_val(r, "Trạng Thái", 3, "")).strip()
+
+            if name:
+                seasons_data.append({
+                    "name": name,
+                    "start_str": start_str,
+                    "start_obj": parse_date_obj(start_str),
+                    "end_str": end_str,
+                    "end_obj": parse_date_obj(end_str) if end_str else datetime.max,
+                    "status": status
+                })
+    if not seasons_data:
+        seasons_data = [{
+            "name": "Mùa 1 (2026)",
+            "start_str": "01/01/2026",
+            "start_obj": parse_date_obj("01/01/2026"),
+            "end_str": "",
+            "end_obj": datetime.max,
+            "status": "Đang Khởi Tranh"
+        }]
+    return seasons_data
+
+
+seasons_info = parse_seasons_dict(seasons_df)
+
+
+def match_belong_to_season(match_dt_obj, season_item):
+    return season_item["start_obj"] <= match_dt_obj <= season_item["end_obj"]
+
+
 def parse_match_row(row):
     raw_date = get_val(row, "Ngày", 0, "")
     match_date = format_date_vn(raw_date)
+    dt_obj = parse_date_obj(raw_date)
+
     p1_1 = str(get_val(row, "Đội 1 - VĐV 1", 1, "")).strip()
     k1_1 = to_int(get_val(row, "Kèo 1_1", 2, 1), 1)
     p1_2 = str(get_val(row, "Đội 1 - VĐV 2", 3, "")).strip()
@@ -220,12 +256,20 @@ def parse_match_row(row):
     video_url = str(get_val(row, "Video", 12, "")).strip()
     season_name = str(get_val(row, "Mùa Giải", 13, "")).strip()
 
+    if not season_name:
+        for s in seasons_info:
+            if match_belong_to_season(dt_obj, s):
+                season_name = s["name"]
+                break
+        if not season_name:
+            season_name = seasons_info[-1]["name"]
+
     if not winner:
         winner = "Đội 1" if score1 > score2 else "Đội 2"
 
     return {
         "date": match_date,
-        "date_obj": parse_date_obj(raw_date),
+        "date_obj": dt_obj,
         "p1_1": p1_1, "k1_1": k1_1,
         "p1_2": p1_2, "k1_2": k1_2,
         "score1": score1,
@@ -299,33 +343,40 @@ with st.sidebar:
 if menu == "🏆 Bảng Xếp Hạng":
     st.subheader("🏆 Bảng Xếp Hạng")
 
-    seasons_list = seasons_df["Tên Mùa"].dropna().tolist() if not seasons_df.empty else ["Mùa 1 (2026)"]
-
+    seasons_list = [s["name"] for s in seasons_info]
     c_season, c_end, c_pop = st.columns([2.5, 1.2, 1])
 
     with c_season:
-        selected_season = st.selectbox("Mùa Giải:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0)
+        selected_season_name = st.selectbox("Mùa Giải:", seasons_list, index=len(seasons_list) - 1 if seasons_list else 0)
+
+    # Tìm thông tin chi tiết mùa đang chọn
+    curr_s_item = next((s for s in seasons_info if s["name"] == selected_season_name), seasons_info[-1])
 
     with c_end:
         st.write("")
         st.write("")
-        if st.button(f"🛑 Kết thúc {selected_season}", use_container_width=True):
-            requests.post(
-                SCRIPT_URL,
-                json={
-                    "action": "end_season",
-                    "season_name": selected_season,
-                    "end_date": format_date_vn(date.today())
-                }
-            )
-            st.toast(f"Đã kết thúc {selected_season}!", icon="✅")
-            st.cache_data.clear()
-            st.rerun()
+        with st.popover(f"🛑 Kết thúc {selected_season_name}", use_container_width=True):
+            st.markdown(f"### 🛑 Xác Nhận Kết Thúc\n**{selected_season_name}**")
+            end_s_date = st.date_input("🗓️ Chọn Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
+            confirm_end = st.button("Đồng ý kết thúc mùa", use_container_width=True)
+
+            if confirm_end:
+                requests.post(
+                    SCRIPT_URL,
+                    json={
+                        "action": "end_season",
+                        "season_name": selected_season_name,
+                        "end_date": format_date_vn(end_s_date)
+                    }
+                )
+                st.toast(f"Đã kết thúc {selected_season_name}!", icon="✅")
+                st.cache_data.clear()
+                st.rerun()
 
     with c_pop:
         st.write("")
         st.write("")
-        with st.popover("⚙️ Tùy Chỉnh Mùa"):
+        with st.popover("⚙️ Tùy Chỉnh Mùa", use_container_width=True):
             st.markdown("### ➕ Thêm Mùa Mới")
             with st.form("add_season_form", clear_on_submit=True):
                 new_s_name = st.text_input("Tên Mùa Giải Mới:", placeholder=f"Mùa {len(seasons_list)+1} (2026)")
@@ -350,46 +401,55 @@ if menu == "🏆 Bảng Xếp Hạng":
                         st.rerun()
 
             st.markdown("---")
-            st.markdown(f"### ✏️ Sửa Tên {selected_season}")
+            st.markdown(f"### ✏️ Chỉnh Sửa {selected_season_name}")
             with st.form("edit_season_form"):
-                rename_val = st.text_input("Tên Mới:", value=selected_season)
-                save_rename = st.form_submit_button("Lưu Tên Mới", use_container_width=True)
-                if save_rename:
-                    if rename_val.strip() and rename_val.strip() != selected_season:
-                        requests.post(
-                            SCRIPT_URL,
-                            json={
-                                "action": "edit_season",
-                                "old_name": selected_season,
-                                "new_name": rename_val.strip()
-                            }
-                        )
-                        st.toast("Đã đổi tên mùa thành công!", icon="✅")
-                        st.cache_data.clear()
-                        st.rerun()
+                edit_name = st.text_input("Tên Mùa:", value=curr_s_item["name"])
+                edit_start = st.date_input("🗓️ Ngày Bắt Đầu:", value=curr_s_item["start_obj"].date() if curr_s_item["start_obj"] != datetime.min else date.today(), format="DD/MM/YYYY")
+
+                is_ended = curr_s_item["status"] == "Đã Kết Thúc" or curr_s_item["end_str"] != ""
+                if is_ended:
+                    edit_end = st.date_input("🗓️ Ngày Kết Thúc:", value=curr_s_item["end_obj"].date() if curr_s_item["end_obj"] != datetime.max else date.today(), format="DD/MM/YYYY")
+                else:
+                    st.caption(" Mùa này đang diễn ra (chưa có ngày kết thúc).")
+                    edit_end = None
+
+                save_edit = st.form_submit_button("Lưu Thay Đổi", use_container_width=True)
+                if save_edit:
+                    payload = {
+                        "action": "edit_season",
+                        "old_name": selected_season_name,
+                        "new_name": edit_name.strip(),
+                        "start_date": format_date_vn(edit_start),
+                        "end_date": format_date_vn(edit_end) if edit_end else ""
+                    }
+                    requests.post(SCRIPT_URL, json=payload)
+                    st.toast("Đã chỉnh sửa mùa giải!", icon="✅")
+                    st.cache_data.clear()
+                    st.rerun()
 
             st.markdown("---")
-            st.markdown(f"### 🗑️ Xóa {selected_season}")
+            st.markdown(f"### 🗑️ Xóa {selected_season_name}")
             if st.button("Xóa Mùa Này", use_container_width=True):
                 requests.post(
                     SCRIPT_URL,
                     json={
                         "action": "delete_season",
-                        "season_name": selected_season
+                        "season_name": selected_season_name
                     }
                 )
-                st.toast(f"Đã xóa {selected_season}!", icon="🗑️")
+                st.toast(f"Đã xóa {selected_season_name}!", icon="🗑️")
                 st.cache_data.clear()
                 st.rerun()
 
+    # Lọc danh sách trận đấu thuộc mùa đã chọn (tự động phân loại theo khoảng thời gian)
     df_season_matches = pd.DataFrame()
     if not matches_df.empty:
         df_season_matches = matches_df[
-            matches_df.apply(lambda r: parse_match_row(r)["season"] == selected_season, axis=1)
+            matches_df.apply(lambda r: match_belong_to_season(parse_match_row(r)["date_obj"], curr_s_item), axis=1)
         ]
 
     if df_season_matches.empty:
-        st.info(f"💡 Chưa có dữ liệu trận đấu nào trong `{selected_season}`.")
+        st.info(f"💡 Chưa có dữ liệu trận đấu nào thuộc khoảng thời gian của `{selected_season_name}` ({curr_s_item['start_str']} → {curr_s_item['end_str'] if curr_s_item['end_str'] else 'Hiện tại'}).")
     else:
         tab_day, tab_month, tab_all = st.tabs(
             ["📅 Xếp hạng Theo Ngày", "📆 Xếp hạng Theo Tháng", "🌟 Bảng Xếp Hạng Mùa"]
@@ -479,7 +539,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             ]
 
             if df_day.empty:
-                st.info(f"💡 Không có trận đấu nào trong ngày `{selected_date_str}` của mùa `{selected_season}`.")
+                st.info(f"💡 Không có trận đấu nào trong ngày `{selected_date_str}` của mùa `{selected_season_name}`.")
             else:
                 df_lb_day = calculate_leaderboard(df_day, show_points=False)
                 total_fund_day = df_lb_day["Điểm thành viên"].sum()
@@ -578,7 +638,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
         # Tab Toàn mùa
         with tab_all:
-            st.write(f"**Bảng xếp hạng tổng quát của `{selected_season}`**")
+            st.write(f"**Bảng xếp hạng tổng quát của `{selected_season_name}`**")
             st.dataframe(
                 calculate_leaderboard(df_season_matches, show_points=True),
                 use_container_width=True,
@@ -596,13 +656,12 @@ if menu == "🏆 Bảng Xếp Hạng":
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới (Đánh Đôi)")
 
-    seasons_list = seasons_df["Tên Mùa"].dropna().tolist() if not seasons_df.empty else ["Mùa 1 (2026)"]
-    current_season = seasons_list[-1] if seasons_list else "Mùa 1 (2026)"
+    current_season_name = seasons_info[-1]["name"] if seasons_info else "Mùa 1 (2026)"
 
     if len(members_list) < 4:
         st.warning("⚠️ Cần tối thiểu 4 VĐV trong danh sách để tổ chức trận đánh đôi!")
     else:
-        st.info(f"🏆 Trận đấu này sẽ được tính vào: **{current_season}**")
+        st.info(f"🏆 Trận đấu này mặc định thuộc: **{current_season_name}**")
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
@@ -653,8 +712,17 @@ elif menu == "📝 Cập nhật trận đấu":
                     st.error("❌ Lỗi: Điểm số hai đội không được bằng nhau (Không có tỉ số hòa).")
                 else:
                     winner = "Đội 1" if int(score1) > int(score2) else "Đội 2"
+                    m_date_vn = format_date_vn(match_date)
+                    m_dt_obj = parse_date_obj(m_date_vn)
+
+                    assigned_season = current_season_name
+                    for s in seasons_info:
+                        if match_belong_to_season(m_dt_obj, s):
+                            assigned_season = s["name"]
+                            break
+
                     new_match = {
-                        "Ngày": format_date_vn(match_date),
+                        "Ngày": m_date_vn,
                         "Đội 1 - VĐV 1": p1,
                         "Kèo 1_1": int(k1_1),
                         "Đội 1 - VĐV 2": p2,
@@ -667,7 +735,7 @@ elif menu == "📝 Cập nhật trận đấu":
                         "Điểm Đội 2": int(score2),
                         "Đội Thắng": winner,
                         "Video": video_input.strip(),
-                        "Mùa Giải": current_season
+                        "Mùa Giải": assigned_season
                     }
                     requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
                     
@@ -698,7 +766,6 @@ elif menu == "🛠️ Lịch sử các trận đấu":
 
         df_p = pd.DataFrame(matches_parsed)
         
-        # Lấy danh sách ngày có trận đấu để làm lựa chọn (sắp xếp giảm dần)
         unique_dates = sorted(df_p["date_obj"].unique(), reverse=True)
         date_options = ["Tất cả các ngày"] + [d.strftime("%d/%m/%Y") for d in unique_dates]
 
@@ -706,16 +773,12 @@ elif menu == "🛠️ Lịch sử các trận đấu":
         with c_filter:
             selected_history_date = st.selectbox("📅 Lọc xem theo ngày:", date_options)
 
-        # Lọc theo ngày được chọn
         if selected_history_date != "Tất cả các ngày":
             df_filtered = df_p[df_p["date"] == selected_history_date]
         else:
             df_filtered = df_p
 
-        # Sắp xếp mặc định: Trận mới nhất/Ngày gần nhất lên trên cùng
         df_filtered = df_filtered.sort_values(by=["date_obj", "row_index"], ascending=[False, False])
-
-        # Gom nhóm theo Ngày để hiển thị
         grouped_dates = df_filtered["date"].unique()
 
         for match_date in grouped_dates:

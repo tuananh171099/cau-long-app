@@ -171,10 +171,10 @@ def load_data():
                 "Đội 2 - VĐV 2",
                 "Điểm Đội 2",
                 "Đội Thắng",
-                "Tiền phạt D1P1",
-                "Tiền phạt D1P2",
-                "Tiền phạt D2P1",
-                "Tiền phạt D2P2",
+                "Tiền Phạt Đội 1 - VĐV 1 (k)",
+                "Tiền Phạt Đội 1 - VĐV 2 (k)",
+                "Tiền Phạt Đội 2 - VĐV 1 (k)",
+                "Tiền Phạt Đội 2 - VĐV 2 (k)",
             ]
         )
 
@@ -273,40 +273,44 @@ if menu == "🏆 Bảng Xếp Hạng":
             }
 
             for _, row in df_filtered.iterrows():
-                p1_d1 = row["Đội 1 - VĐV 1"]
-                p2_d1 = row["Đội 1 - VĐV 2"]
-                p1_d2 = row["Đội 2 - VĐV 1"]
-                p2_d2 = row["Đội 2 - VĐV 2"]
+                p1_1 = row.get("Đội 1 - VĐV 1")
+                p1_2 = row.get("Đội 1 - VĐV 2")
+                p2_1 = row.get("Đội 2 - VĐV 1")
+                p2_2 = row.get("Đội 2 - VĐV 2")
 
-                fine_d1_p1 = row.get("Tiền phạt D1P1", 10)
-                fine_d1_p2 = row.get("Tiền phạt D1P2", 10)
-                fine_d2_p1 = row.get("Tiền phạt D2P1", 10)
-                fine_d2_p2 = row.get("Tiền phạt D2P2", 10)
+                fine1_1 = row.get("Tiền Phạt Đội 1 - VĐV 1 (k)", 0)
+                fine1_2 = row.get("Tiền Phạt Đội 1 - VĐV 2 (k)", 0)
+                fine2_1 = row.get("Tiền Phạt Đội 2 - VĐV 1 (k)", 0)
+                fine2_2 = row.get("Tiền Phạt Đội 2 - VĐV 2 (k)", 0)
 
-                # Chuyển đổi an toàn về số
-                fine_d1_p1 = 10 if pd.isna(fine_d1_p1) else float(fine_d1_p1)
-                fine_d1_p2 = 10 if pd.isna(fine_d1_p2) else float(fine_d1_p2)
-                fine_d2_p1 = 10 if pd.isna(fine_d2_p1) else float(fine_d2_p1)
-                fine_d2_p2 = 10 if pd.isna(fine_d2_p2) else float(fine_d2_p2)
+                # Fallback logic nếu dữ liệu cũ chưa có cột phạt riêng từng người
+                if pd.isna(fine1_1): fine1_1 = 0 if row["Đội Thắng"] == "Đội 1" else 10
+                if pd.isna(fine1_2): fine1_2 = 0 if row["Đội Thắng"] == "Đội 1" else 10
+                if pd.isna(fine2_1): fine2_1 = 0 if row["Đội Thắng"] == "Đội 2" else 10
+                if pd.isna(fine2_2): fine2_2 = 0 if row["Đội Thắng"] == "Đội 2" else 10
 
-                if row["Đội Thắng"] == "Đội 1":
-                    winners = [p1_d1, p2_d1]
-                    losers_with_fine = [(p1_d2, fine_d2_p1), (p2_d2, fine_d2_p2)]
-                else:
-                    winners = [p1_d2, p2_d2]
-                    losers_with_fine = [(p1_d1, fine_d1_p1), (p2_d1, fine_d1_p2)]
+                players_fines = [
+                    (p1_1, "Đội 1", fine1_1),
+                    (p1_2, "Đội 1", fine1_2),
+                    (p2_1, "Đội 2", fine2_1),
+                    (p2_2, "Đội 2", fine2_2),
+                ]
 
-                for w in winners:
-                    if w in stats:
-                        stats[w]["Điểm"] += 3
-                        stats[w]["Thắng"] += 1
-                        stats[w]["Tổng Số Trận"] += 1
+                winning_team = row["Đội Thắng"]
 
-                for l, fine in losers_with_fine:
-                    if l in stats:
-                        stats[l]["Thua"] += 1
-                        stats[l]["Tổng Số Trận"] += 1
-                        stats[l]["Ủng Hộ Quỹ (k)"] += fine
+                for p_name, team_name, fine_val in players_fines:
+                    if p_name in stats:
+                        stats[p_name]["Tổng Số Trận"] += 1
+                        try:
+                            stats[p_name]["Ủng Hộ Quỹ (k)"] += float(fine_val)
+                        except (ValueError, TypeError):
+                            pass
+
+                        if team_name == winning_team:
+                            stats[p_name]["Điểm"] += 3
+                            stats[p_name]["Thắng"] += 1
+                        else:
+                            stats[p_name]["Thua"] += 1
 
             for m in stats:
                 total = stats[m]["Tổng Số Trận"]
@@ -503,19 +507,15 @@ elif menu == "📝 Cập nhật trận đấu":
                     unsafe_allow_html=True,
                 )
                 p1 = st.selectbox("Thành viên 1", members_list, index=0, key="p1")
-                fine_d1_p1 = st.number_input(
-                    f"Số tiền thua phạt (k) - {p1}", min_value=0, max_value=50, value=10, key="fine_d1_p1"
-                )
-                
+                fine1_1 = st.number_input("Tiền phạt VĐV 1 (k)", min_value=0, max_value=50, value=0, step=1, key="fine1_1")
+
                 p2 = st.selectbox(
                     "Thành viên 2",
                     members_list,
                     index=min(1, len(members_list) - 1),
                     key="p2",
                 )
-                fine_d1_p2 = st.number_input(
-                    f"Số tiền thua phạt (k) - {p2}", min_value=0, max_value=50, value=10, key="fine_d1_p2"
-                )
+                fine1_2 = st.number_input("Tiền phạt VĐV 2 (k)", min_value=0, max_value=50, value=0, step=1, key="fine1_2")
 
                 score1 = st.number_input(
                     "Điểm Số Đội 1", min_value=0, max_value=30, value=21
@@ -532,9 +532,7 @@ elif menu == "📝 Cập nhật trận đấu":
                     index=min(2, len(members_list) - 1),
                     key="p3",
                 )
-                fine_d2_p1 = st.number_input(
-                    f"Số tiền thua phạt (k) - {p3}", min_value=0, max_value=50, value=10, key="fine_d2_p1"
-                )
+                fine2_1 = st.number_input("Tiền phạt VĐV 1 (k)", min_value=0, max_value=50, value=10, step=1, key="fine2_1")
 
                 p4 = st.selectbox(
                     "Thành viên 2",
@@ -542,9 +540,7 @@ elif menu == "📝 Cập nhật trận đấu":
                     index=min(3, len(members_list) - 1),
                     key="p4",
                 )
-                fine_d2_p2 = st.number_input(
-                    f"Số tiền thua phạt (k) - {p4}", min_value=0, max_value=50, value=10, key="fine_d2_p2"
-                )
+                fine2_2 = st.number_input("Tiền phạt VĐV 2 (k)", min_value=0, max_value=50, value=10, step=1, key="fine2_2")
 
                 score2 = st.number_input(
                     "Điểm Số Đội 2", min_value=0, max_value=30, value=19
@@ -572,10 +568,10 @@ elif menu == "📝 Cập nhật trận đấu":
                         "Đội 2 - VĐV 2": p4,
                         "Điểm Đội 2": int(score2),
                         "Đội Thắng": winner,
-                        "Tiền phạt D1P1": int(fine_d1_p1),
-                        "Tiền phạt D1P2": int(fine_d1_p2),
-                        "Tiền phạt D2P1": int(fine_d2_p1),
-                        "Tiền phạt D2P2": int(fine_d2_p2),
+                        "Tiền Phạt Đội 1 - VĐV 1 (k)": int(fine1_1),
+                        "Tiền Phạt Đội 1 - VĐV 2 (k)": int(fine1_2),
+                        "Tiền Phạt Đội 2 - VĐV 1 (k)": int(fine2_1),
+                        "Tiền Phạt Đội 2 - VĐV 2 (k)": int(fine2_2),
                     }
                     requests.post(
                         SCRIPT_URL,
@@ -661,38 +657,44 @@ elif menu == "🔍 Tìm kiếm thành viên":
         now = datetime.now()
 
         win_today = lose_today = win_month = lose_month = 0
-        fine_today = fine_month = 0.0
+        fine_today = fine_month = 0
 
         if not user_matches.empty:
             user_matches["Ngày_dt"] = pd.to_datetime(user_matches["Ngày"])
 
             for _, row in user_matches.iterrows():
-                p1_d1 = row["Đội 1 - VĐV 1"]
-                p2_d1 = row["Đội 1 - VĐV 2"]
-                p1_d2 = row["Đội 2 - VĐV 1"]
-                p2_d2 = row["Đội 2 - VĐV 2"]
+                # Xử lý tính tiền phạt của thành viên trong trận
+                p_fine = 0
+                is_team1 = False
+                if row["Đội 1 - VĐV 1"] == selected_member:
+                    p_fine = row.get("Tiền Phạt Đội 1 - VĐV 1 (k)", 0)
+                    is_team1 = True
+                elif row["Đội 1 - VĐV 2"] == selected_member:
+                    p_fine = row.get("Tiền Phạt Đội 1 - VĐV 2 (k)", 0)
+                    is_team1 = True
+                elif row["Đội 2 - VĐV 1"] == selected_member:
+                    p_fine = row.get("Tiền Phạt Đội 2 - VĐV 1 (k)", 0)
+                elif row["Đội 2 - VĐV 2"] == selected_member:
+                    p_fine = row.get("Tiền Phạt Đội 2 - VĐV 2 (k)", 0)
 
-                is_team1 = selected_member in [p1_d1, p2_d1]
                 is_winner = (is_team1 and row["Đội Thắng"] == "Đội 1") or (
                     not is_team1 and row["Đội Thắng"] == "Đội 2"
                 )
 
-                # Lấy tiền phạt tùy vị trí VĐV
-                if selected_member == p1_d1:
-                    user_fine = float(row.get("Tiền phạt D1P1", 10) if not pd.isna(row.get("Tiền phạt D1P1", 10)) else 10)
-                elif selected_member == p2_d1:
-                    user_fine = float(row.get("Tiền phạt D1P2", 10) if not pd.isna(row.get("Tiền phạt D1P2", 10)) else 10)
-                elif selected_member == p1_d2:
-                    user_fine = float(row.get("Tiền phạt D2P1", 10) if not pd.isna(row.get("Tiền phạt D2P1", 10)) else 10)
-                else:
-                    user_fine = float(row.get("Tiền phạt D2P2", 10) if not pd.isna(row.get("Tiền phạt D2P2", 10)) else 10)
+                if pd.isna(p_fine):
+                    p_fine = 0 if is_winner else 10
+
+                try:
+                    p_fine = float(p_fine)
+                except (ValueError, TypeError):
+                    p_fine = 0
 
                 if row["Ngày"] == today_str:
                     if is_winner:
                         win_today += 1
                     else:
                         lose_today += 1
-                        fine_today += user_fine
+                    fine_today += p_fine
 
                 if (
                     row["Ngày_dt"].month == now.month
@@ -702,7 +704,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                         win_month += 1
                     else:
                         lose_month += 1
-                        fine_month += user_fine
+                    fine_month += p_fine
 
         st.write("")
         c_today, c_month = st.columns(2)

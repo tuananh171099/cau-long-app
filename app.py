@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn chỉnh thẳng hàng tuyệt đối & đổi tên thương hiệu
+# CSS Tối ưu chống tràn màn hình & căn chỉnh giao diện chuẩn Mobile
 st.markdown(
     """
     <style>
@@ -26,12 +26,12 @@ st.markdown(
         max-width: 100% !important;
     }
 
-    /* Đảm bảo hàng ngang căn đáy (bottom) để tiêu đề Đội thẳng hàng 100% với Ô Điểm */
+    /* Đảm bảo hàng ngang co giãn linh hoạt trên mobile */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: flex-end !important;
+        align-items: flex-start !important;
         gap: 6px !important;
         width: 100% !important;
     }
@@ -41,16 +41,16 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
-    /* Tối ưu chiều cao đồng nhất 40px cho các ô */
+    /* Tối ưu ô chọn & ô nhập số */
     div[data-baseweb="select"] > div {
-        min-height: 40px !important;
-        font-size: 0.85rem !important;
+        min-height: 38px !important;
+        font-size: 0.8rem !important;
         padding: 0 2px !important;
     }
     
     .stNumberInput input {
-        height: 40px !important;
-        font-size: 0.9rem !important;
+        height: 38px !important;
+        font-size: 0.85rem !important;
         padding: 2px 4px !important;
     }
 
@@ -144,34 +144,25 @@ st.markdown(
         margin-right: 4px;
     }
 
-    /* Thiết lập chuẩn chiều cao 40px cho thẻ tiêu đề Đội */
     .team-card-1 {
         background-color: #e7f5ff;
         border-left: 4px solid #1c7ed6;
-        padding: 0 10px;
-        height: 40px !important;
-        display: flex !important;
-        align-items: center !important;
+        padding: 6px 10px;
         border-radius: 6px;
         font-weight: bold;
         color: #1c7ed6;
         font-size: 0.9rem;
-        box-sizing: border-box;
-        margin-bottom: 1px;
+        margin-bottom: 6px;
     }
     .team-card-2 {
         background-color: #fff5f5;
         border-left: 4px solid #f03e3e;
-        padding: 0 10px;
-        height: 40px !important;
-        display: flex !important;
-        align-items: center !important;
+        padding: 6px 10px;
         border-radius: 6px;
         font-weight: bold;
         color: #f03e3e;
         font-size: 0.9rem;
-        box-sizing: border-box;
-        margin-bottom: 1px;
+        margin-bottom: 6px;
     }
     </style>
 """,
@@ -701,7 +692,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (THẲNG HÀNG 100% ĐỘI 1 & ĐỘI 2)
+# 2. CẬP NHẬT TRẬN ĐẤU (CẤU TRÚC ĐỐI XỨNG CHUẨN ĐẸP NÓT LỆCH)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -715,45 +706,43 @@ elif menu == "📝 Cập nhật trận đấu":
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
-            # 🔵 ĐỘI 1: Căn đáy chuẩn 100% không bao giờ lệch
-            col_t1_title, col_t1_score = st.columns([2.5, 1])
-            with col_t1_title:
-                st.markdown("<div class='team-card-1'>🔵 ĐỘI 1</div>", unsafe_allow_html=True)
-            with col_t1_score:
-                score1 = st.number_input("Điểm Đội 1", min_value=0, max_value=30, value=21, label_visibility="collapsed")
+            # 🔵 ĐỘI 1
+            st.markdown("<div class='team-card-1'>🔵 ĐỘI 1</div>", unsafe_allow_html=True)
 
             cp1_name, cp1_bet = st.columns([2.5, 1])
             with cp1_name:
                 p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
             with cp1_bet:
-                k1_1 = st.number_input("Điểm 1", min_value=0, max_value=10, value=1, step=1, key="k1_1")
+                k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
 
             cp2_name, cp2_bet = st.columns([2.5, 1])
             with cp2_name:
                 p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
             with cp2_bet:
-                k1_2 = st.number_input("Điểm 2", min_value=0, max_value=10, value=1, step=1, key="k1_2")
+                score1 = st.number_input("Điểm Đội 1", min_value=0, max_value=30, value=21, key="s1")
+
+            # Mặc định Điểm VĐV 2 bằng 1 để lưu dữ liệu chuẩn xác
+            k1_2 = 1
 
             st.write("")
 
-            # 🔴 ĐỘI 2: Căn đáy chuẩn 100% không bao giờ lệch
-            col_t2_title, col_t2_score = st.columns([2.5, 1])
-            with col_t2_title:
-                st.markdown("<div class='team-card-2'>🔴 ĐỘI 2</div>", unsafe_allow_html=True)
-            with col_t2_score:
-                score2 = st.number_input("Điểm Đội 2", min_value=0, max_value=30, value=19, label_visibility="collapsed")
+            # 🔴 ĐỘI 2
+            st.markdown("<div class='team-card-2'>🔴 ĐỘI 2</div>", unsafe_allow_html=True)
 
             cp3_name, cp3_bet = st.columns([2.5, 1])
             with cp3_name:
                 p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
             with cp3_bet:
-                k2_1 = st.number_input("Điểm 1", min_value=0, max_value=10, value=1, step=1, key="k2_1")
+                k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
 
             cp4_name, cp4_bet = st.columns([2.5, 1])
             with cp4_name:
                 p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
             with cp4_bet:
-                k2_2 = st.number_input("Điểm 2", min_value=0, max_value=10, value=1, step=1, key="k2_2")
+                score2 = st.number_input("Điểm Đội 2", min_value=0, max_value=30, value=19, key="s2")
+
+            # Mặc định Điểm VĐV 2 bằng 1 để lưu dữ liệu chuẩn xác
+            k2_2 = 1
 
             video_input = st.text_input("🎥 Link Video YouTube (Tùy chọn):", placeholder="https://...")
 
@@ -851,8 +840,8 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                 with st.expander("🔍 Chi tiết & Video"):
                     st.write(
                         f"• **Mùa:** `{m['season']}`\n"
-                        f"• **Đội 1:** {m['p1_1']} (`điểm {m['k1_1']}`) | {m['p1_2']} (`điểm {m['k1_2']}`)\n"
-                        f"• **Đội 2:** {m['p2_1']} (`điểm {m['k2_1']}`) | {m['p2_2']} (`điểm {m['k2_2']}`)"
+                        f"• **Đội 1:** {m['p1_1']} (`điểm {m['k1_1']}`) | {m['p1_2']}\n"
+                        f"• **Đội 2:** {m['p2_1']} (`điểm {m['k2_1']}`) | {m['p2_2']}"
                     )
 
                     if m["video_url"]:

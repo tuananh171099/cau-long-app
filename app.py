@@ -11,11 +11,21 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS ÉP CỨNG 3 MỤC LÊN CÙNG 1 HÀNG TRÊN MOBILE
+# CSS Tối ưu giao diện Điện thoại
 st.markdown(
     """
     <style>
-    /* 1. Tắt cơ chế rớt dòng mặc định của Streamlit trên Mobile */
+    /* Khóa cuộn ngang toàn trang */
+    html, body, [data-testid="stAppViewContainer"] {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
+    .main .block-container {
+        padding: 0.6rem 0.4rem !important;
+    }
+
+    /* Tắt tự rớt dòng mặc định của Streamlit */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -25,41 +35,46 @@ st.markdown(
         width: 100% !important;
     }
 
-    /* 2. Chia tỉ lệ độ rộng % trực tiếp cho 3 cột */
-    div[data-testid="stHorizontalBlock"] > div:nth-child(1) {
-        flex: 0 0 44% !important;
-        min-width: 0 !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) {
-        flex: 0 0 28% !important;
-        min-width: 0 !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(3) {
-        flex: 0 0 28% !important;
-        min-width: 0 !important;
-    }
+    /* Tỉ lệ cột cho thanh Mùa Giải */
+    .season-row > div:nth-child(1) { flex: 0 0 44% !important; min-width: 0 !important; }
+    .season-row > div:nth-child(2) { flex: 0 0 28% !important; min-width: 0 !important; }
+    .season-row > div:nth-child(3) { flex: 0 0 28% !important; min-width: 0 !important; }
 
-    /* 3. Tối ưu ô Selectbox & Nút bấm co giãn vừa màn hình */
+    /* Tỉ lệ cột cho VĐV và Điểm kèo */
+    .player-row > div:nth-child(1) { flex: 0 0 70% !important; min-width: 0 !important; }
+    .player-row > div:nth-child(2) { flex: 0 0 30% !important; min-width: 0 !important; }
+
+    /* Tỉ lệ cột cho Tiêu đề Đội & Điểm Trận */
+    .team-header-row > div:nth-child(1) { flex: 0 0 60% !important; min-width: 0 !important; }
+    .team-header-row > div:nth-child(2) { flex: 0 0 40% !important; min-width: 0 !important; }
+
+    /* Tỉ lệ cột cho Danh sách VĐV */
+    .member-item-row > div:nth-child(1) { flex: 0 0 80% !important; min-width: 0 !important; }
+    .member-item-row > div:nth-child(2) { flex: 0 0 20% !important; min-width: 0 !important; }
+
+    /* Tối ưu ô Input & Selectbox */
     div[data-baseweb="select"] > div {
-        min-height: 38px !important;
-        font-size: 0.75rem !important;
-        padding: 0 2px !important;
+        min-height: 36px !important;
+        font-size: 0.8rem !important;
+        padding: 0 4px !important;
     }
     
+    .stNumberInput input {
+        height: 36px !important;
+        font-size: 0.85rem !important;
+        padding: 2px 4px !important;
+    }
+
     .stPopover button {
         padding: 2px 2px !important;
         font-size: 0.72rem !important;
-        height: 38px !important;
+        height: 36px !important;
         width: 100% !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
 
-    /* 4. Layout chung */
-    .main .block-container {
-        padding: 0.8rem 0.4rem !important;
-    }
     .metric-card {
         background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
         border: 1px solid #e9ecef;
@@ -79,6 +94,8 @@ st.markdown(
         font-weight: 700;
         color: #212529;
     }
+    
+    /* Scoreboard */
     .scoreboard-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -140,16 +157,18 @@ st.markdown(
     .team-card-1 {
         background-color: #e7f5ff;
         border-left: 4px solid #1c7ed6;
-        padding: 8px;
+        padding: 6px 10px;
         border-radius: 6px;
-        margin-bottom: 8px;
+        font-weight: bold;
+        color: #1c7ed6;
     }
     .team-card-2 {
         background-color: #fff5f5;
         border-left: 4px solid #f03e3e;
-        padding: 8px;
+        padding: 6px 10px;
         border-radius: 6px;
-        margin-bottom: 8px;
+        font-weight: bold;
+        color: #f03e3e;
     }
     </style>
 """,
@@ -383,7 +402,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
     seasons_list = [s["name"] for s in seasons_info]
     
-    # Ép 3 ô hiển thị đầy đủ tên trên CÙNG 1 HÀNG trên điện thoại
+    st.markdown('<div class="season-row">', unsafe_allow_html=True)
     col_s, col_e, col_p = st.columns([44, 28, 28])
 
     with col_s:
@@ -480,6 +499,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.toast(f"Đã xóa {selected_season_name}!", icon="🗑️")
                 st.cache_data.clear()
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     df_season_matches = pd.DataFrame()
     if not matches_df.empty:
@@ -694,35 +714,57 @@ elif menu == "📝 Cập nhật trận đấu":
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
-            st.markdown("<div class='team-card-1'><b>🔵 ĐỘI 1</b></div>", unsafe_allow_html=True)
-            cp1_name, cp1_bet = st.columns([2.2, 1])
+            # 🔴 ĐỘI 1: Tiêu đề + Ô điểm thi đấu nằm CÙNG 1 HÀNG
+            st.markdown('<div class="team-header-row">', unsafe_allow_html=True)
+            col_t1_title, col_t1_score = st.columns([60, 40])
+            with col_t1_title:
+                st.markdown("<div class='team-card-1'>🔵 ĐỘI 1</div>", unsafe_allow_html=True)
+            with col_t1_score:
+                score1 = st.number_input("Điểm Đội 1", min_value=0, max_value=30, value=21, label_visibility="collapsed")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="player-row">', unsafe_allow_html=True)
+            cp1_name, cp1_bet = st.columns([70, 30])
             with cp1_name:
                 p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
             with cp1_bet:
-                k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
+                k1_1 = st.number_input("Kèo", min_value=0, max_value=10, value=1, step=1, key="k1_1")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            cp2_name, cp2_bet = st.columns([2.2, 1])
+            st.markdown('<div class="player-row">', unsafe_allow_html=True)
+            cp2_name, cp2_bet = st.columns([70, 30])
             with cp2_name:
                 p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
             with cp2_bet:
-                k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
+                k1_2 = st.number_input("Kèo", min_value=0, max_value=10, value=1, step=1, key="k1_2")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            score1 = st.number_input("Điểm Số Đội 1", min_value=0, max_value=30, value=21)
+            st.write("")
 
-            st.markdown("<div class='team-card-2'><b>🔴 ĐỘI 2</b></div>", unsafe_allow_html=True)
-            cp3_name, cp3_bet = st.columns([2.2, 1])
+            # 🔴 ĐỘI 2: Tiêu đề + Ô điểm thi đấu nằm CÙNG 1 HÀNG
+            st.markdown('<div class="team-header-row">', unsafe_allow_html=True)
+            col_t2_title, col_t2_score = st.columns([60, 40])
+            with col_t2_title:
+                st.markdown("<div class='team-card-2'>🔴 ĐỘI 2</div>", unsafe_allow_html=True)
+            with col_t2_score:
+                score2 = st.number_input("Điểm Đội 2", min_value=0, max_value=30, value=19, label_visibility="collapsed")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="player-row">', unsafe_allow_html=True)
+            cp3_name, cp3_bet = st.columns([70, 30])
             with cp3_name:
                 p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
             with cp3_bet:
-                k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
+                k2_1 = st.number_input("Kèo", min_value=0, max_value=10, value=1, step=1, key="k2_1")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            cp4_name, cp4_bet = st.columns([2.2, 1])
+            st.markdown('<div class="player-row">', unsafe_allow_html=True)
+            cp4_name, cp4_bet = st.columns([70, 30])
             with cp4_name:
                 p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
             with cp4_bet:
-                k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
-
-            score2 = st.number_input("Điểm Số Đội 2", min_value=0, max_value=30, value=19)
+                k2_2 = st.number_input("Kèo", min_value=0, max_value=10, value=1, step=1, key="k2_2")
+            st.markdown('</div>', unsafe_allow_html=True)
 
             video_input = st.text_input("🎥 Link Video YouTube (Tùy chọn):", placeholder="https://...")
 
@@ -985,18 +1027,17 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
 
 # ==========================================
-# 5. QUẢN LÝ THÀNH VIÊN
+# 5. QUẢN LÝ THÀNH VIÊN (ĐÃ SỬA CHUẨN MOBILE)
 # ==========================================
 elif menu == "⚙️ Quản lý thành viên":
     st.subheader("⚙️ Quản Lý VĐV")
 
-    col_add, col_list = st.columns([1, 1])
+    tab_add, tab_list = st.tabs(["➕ Thêm VĐV Mới", "📋 Danh Sách VĐV"])
 
-    with col_add:
-        st.write("### ➕ Thêm VĐV")
+    with tab_add:
         with st.form("add_member_form", clear_on_submit=True):
             new_name = st.text_input("Họ và Tên VĐV:")
-            add_btn = st.form_submit_button("Thêm mới", use_container_width=True)
+            add_btn = st.form_submit_button("Thêm VĐV Mới", use_container_width=True)
 
             if add_btn:
                 name_clean = new_name.strip()
@@ -1011,17 +1052,20 @@ elif menu == "⚙️ Quản lý thành viên":
                     st.cache_data.clear()
                     st.rerun()
 
-    with col_list:
-        st.write("### 📋 Danh Sách Current")
+    with tab_list:
         if not members_list:
             st.info("Chưa có VĐV nào.")
         else:
             for idx, member in enumerate(members_list):
-                c_name, c_btn = st.columns([2.5, 1])
-                c_name.write(f"**{idx + 1}. {member}**")
-                if c_btn.button("🗑️", key=f"del_mem_{idx}", use_container_width=True):
-                    payload = {"action": "delete_member", "name": member}
-                    requests.post(SCRIPT_URL, json=payload)
-                    st.toast(f"Đã xóa **{member}**!", icon="🗑️")
-                    st.cache_data.clear()
-                    st.rerun()
+                st.markdown('<div class="member-item-row">', unsafe_allow_html=True)
+                c_name, c_btn = st.columns([80, 20])
+                with c_name:
+                    st.write(f"**{idx + 1}. {member}**")
+                with c_btn:
+                    if st.button("🗑️", key=f"del_mem_{idx}", use_container_width=True):
+                        payload = {"action": "delete_member", "name": member}
+                        requests.post(SCRIPT_URL, json=payload)
+                        st.toast(f"Đã xóa **{member}**!", icon="🗑️")
+                        st.cache_data.clear()
+                        st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)

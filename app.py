@@ -509,7 +509,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     "Thắng": 0,
                     "Thua": 0,
                     "Điểm": 0,
-                    "Tổng": 0,
+                    "Tổng Trận": 0,
                     "% Thắng": 0.0,
                 }
                 for m in members_list
@@ -529,16 +529,16 @@ if menu == "🏆 Bảng Xếp Hạng":
                 for w in winners:
                     if w in stats:
                         stats[w]["Thắng"] += 1
-                        stats[w]["Tổng"] += 1
+                        stats[w]["Tổng Trận"] += 1
 
                 for l_player, l_bet in losers:
                     if l_player in stats:
                         stats[l_player]["Thua"] += 1
-                        stats[l_player]["Tổng"] += 1
+                        stats[l_player]["Tổng Trận"] += 1
                         stats[l_player]["Điểm"] += l_bet
 
             for m in stats:
-                total = stats[m]["Tổng"]
+                total = stats[m]["Tổng Trận"]
                 if total > 0:
                     stats[m]["% Thắng"] = round((stats[m]["Thắng"] / total) * 100, 1)
 
@@ -551,7 +551,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 "Thắng",
                 "Thua",
                 "Điểm",
-                "Tổng",
+                "Tổng Trận",
                 "% Thắng",
             ]
 
@@ -570,13 +570,13 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # Đã điều chỉnh kích thước vừa vặn, không che chữ hay cắt dòng
+        # Cột 'Tổng Trận' đã được tăng kích thước vừa vặn (75px) không che chữ
         column_configs = {
             "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=110),
             "Thắng": st.column_config.NumberColumn("Thắng", width=50),
             "Thua": st.column_config.NumberColumn("Thua", width=50),
             "Điểm": st.column_config.NumberColumn("Điểm", width=55),
-            "Tổng": st.column_config.NumberColumn("Tổng", width=55),
+            "Tổng Trận": st.column_config.NumberColumn("Tổng Trận", width=75),
             "% Thắng": st.column_config.ProgressColumn(
                 "% Thắng", format="%.0f%%", min_value=0, max_value=100, width=90
             ),

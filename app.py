@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu giao diện & hỗ trợ nhập liệu trên Mobile
+# CSS Tối ưu giao diện Mobile
 st.markdown(
     """
     <style>
@@ -40,19 +40,13 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
-    /* Ép thanh Selectbox của BaseWeb hiện ô input có thể gõ nội dung trên Mobile */
-    div[data-baseweb="select"] input {
-        -webkit-user-select: text !important;
-        user-select: text !important;
-        cursor: text !important;
+    /* Đảm bảo ô nhập văn bản bật bàn phím mobile tốt nhất */
+    .stTextInput input {
+        height: 38px !important;
+        font-size: 0.85rem !important;
+        padding: 2px 6px !important;
     }
 
-    div[data-baseweb="select"] > div {
-        min-height: 38px !important;
-        font-size: 0.85rem !important;
-        padding: 0 2px !important;
-    }
-    
     .stNumberInput input {
         height: 38px !important;
         font-size: 0.85rem !important;
@@ -699,7 +693,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU
+# 2. CẬP NHẬT TRẬN ĐẤU (Ô NHẬP BẬT BÀN PHÍM TÌM TÊN 100% TRÊN MOBILE)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -710,6 +704,22 @@ elif menu == "📝 Cập nhật trận đấu":
         st.warning("⚠️ Cần tối thiểu 4 VĐV để tổ chức trận đấu!")
     else:
         st.caption(f"🏆 Mùa hiện tại: **{current_season_name}**")
+        
+        # Tạo hàm riêng để hiển thị ô nhập tên tự gõ tìm kiếm bật bàn phím
+        def player_input_field(label_title, default_val, field_key):
+            val = st.text_input(
+                label_title, 
+                value=default_val, 
+                key=f"input_{field_key}", 
+                placeholder="Gõ tên VĐV..."
+            )
+            # Hiện danh sách gợi ý bên dưới nếu nhập chưa đúng tên
+            if val and val not in members_list:
+                matched = [m for m in members_list if val.lower() in m.lower()]
+                if matched:
+                    st.caption(f"💡 Gợi ý: **{', '.join(matched)}**")
+            return val
+
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
@@ -718,7 +728,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp1_name, cp1_bet, cp1_team = st.columns([2.2, 1, 1.3])
             with cp1_name:
-                p1 = st.selectbox("VĐV 1", members_list, index=0, key="p1")
+                p1 = player_input_field("VĐV 1", members_list[0] if members_list else "", "p1")
             with cp1_bet:
                 k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
             with cp1_team:
@@ -726,7 +736,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp2_name, cp2_bet, _ = st.columns([2.2, 1, 1.3])
             with cp2_name:
-                p2 = st.selectbox("VĐV 2", members_list, index=min(1, len(members_list) - 1), key="p2")
+                p2 = player_input_field("VĐV 2", members_list[1] if len(members_list) > 1 else "", "p2")
             with cp2_bet:
                 k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
 
@@ -737,7 +747,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp3_name, cp3_bet, cp3_team = st.columns([2.2, 1, 1.3])
             with cp3_name:
-                p3 = st.selectbox("VĐV 1", members_list, index=min(2, len(members_list) - 1), key="p3")
+                p3 = player_input_field("VĐV 1", members_list[2] if len(members_list) > 2 else "", "p3")
             with cp3_bet:
                 k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
             with cp3_team:
@@ -745,7 +755,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp4_name, cp4_bet, _ = st.columns([2.2, 1, 1.3])
             with cp4_name:
-                p4 = st.selectbox("VĐV 2", members_list, index=min(3, len(members_list) - 1), key="p4")
+                p4 = player_input_field("VĐV 2", members_list[3] if len(members_list) > 3 else "", "p4")
             with cp4_bet:
                 k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
 
@@ -755,8 +765,12 @@ elif menu == "📝 Cập nhật trận đấu":
             submitted = st.form_submit_button("💾 LƯU TRẬN ĐẤU", use_container_width=True)
 
             if submitted:
-                players = [p1, p2, p3, p4]
-                if len(set(players)) < 4:
+                players = [p1.strip(), p2.strip(), p3.strip(), p4.strip()]
+                invalid_p = [p for p in players if p not in members_list]
+
+                if invalid_p:
+                    st.error(f"❌ VĐV `{', '.join(invalid_p)}` không có trong danh sách VĐV!")
+                elif len(set(players)) < 4:
                     st.error("❌ Trùng tên VĐV!")
                 elif score1 == score2:
                     st.error("❌ Điểm hai đội không được bằng nhau!")
@@ -773,14 +787,14 @@ elif menu == "📝 Cập nhật trận đấu":
 
                     new_match = {
                         "Ngày": m_date_vn,
-                        "Đội 1 - VĐV 1": p1,
+                        "Đội 1 - VĐV 1": p1.strip(),
                         "Kèo 1_1": int(k1_1),
-                        "Đội 1 - VĐV 2": p2,
+                        "Đội 1 - VĐV 2": p2.strip(),
                         "Kèo 1_2": int(k1_2),
                         "Điểm Đội 1": int(score1),
-                        "Đội 2 - VĐV 1": p3,
+                        "Đội 2 - VĐV 1": p3.strip(),
                         "Kèo 2_1": int(k2_1),
-                        "Đội 2 - VĐV 2": p4,
+                        "Đội 2 - VĐV 2": p4.strip(),
                         "Kèo 2_2": int(k2_2),
                         "Điểm Đội 2": int(score2),
                         "Đội Thắng": winner,

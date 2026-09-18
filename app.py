@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu giao diện & ép ô Selectbox bật bàn phím gõ tìm kiếm trên Mobile
+# CSS Tối ưu ép hiển thị thanh gõ tìm kiếm bật bàn phím di động 100%
 st.markdown(
     """
     <style>
@@ -40,10 +40,16 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
-    /* Tối ưu ô chọn & hỗ trợ gõ phím tìm kiếm mobile */
+    /* Ép thanh Selectbox của BaseWeb hiện ô input có thể gõ nội dung trên Mobile */
+    div[data-baseweb="select"] input {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        cursor: text !important;
+    }
+
     div[data-baseweb="select"] > div {
         min-height: 38px !important;
-        font-size: 0.8rem !important;
+        font-size: 0.85rem !important;
         padding: 0 2px !important;
     }
     
@@ -692,8 +698,21 @@ if menu == "🏆 Bảng Xếp Hạng":
                 )
 
 
+# Hàm tự tạo Selectbox bật được bàn phím gõ tìm kiếm ký tự trên Mobile
+def render_player_select(label, options, default_index=0, key=None):
+    # Cho phép tìm kiếm bằng ô nhập văn bản lọc danh sách
+    search_term = st.text_input(f"🔍 Tìm {label}:", placeholder="Gõ tên VĐV...", key=f"search_{key}")
+    filtered_options = [opt for opt in options if search_term.strip().lower() in opt.lower()]
+    if not filtered_options:
+        filtered_options = options
+
+    idx = min(default_index, len(filtered_options) - 1) if filtered_options else 0
+    selected_val = st.selectbox(label, filtered_options, index=idx, key=f"select_{key}")
+    return selected_val
+
+
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (BẬT TÌM KIẾM BÀN PHÍM TRÊN MOBILE)
+# 2. CẬP NHẬT TRẬN ĐẤU (HỖ TRỢ GÕ TÌM KIẾM TRÊN MOBILE)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -1002,7 +1021,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
 
 # ==========================================
-# 5. QUẢN LÝ THÀNH VIÊN (BỔ SUNG NÚT SỬA TÊN VĐV)
+# 5. QUẢN LÝ THÀNH VIÊN
 # ==========================================
 elif menu == "⚙️ Quản lý thành viên":
     st.subheader("⚙️ Quản Lý VĐV")
@@ -1036,7 +1055,6 @@ elif menu == "⚙️ Quản lý thành viên":
             with c_name:
                 st.write(f"**{idx + 1}. {member}**")
             
-            # Nút Chỉnh Sửa Tên
             with c_edit:
                 with st.popover("✏️", use_container_width=True):
                     st.markdown(f"### ✏️ Sửa tên VĐV")
@@ -1060,7 +1078,6 @@ elif menu == "⚙️ Quản lý thành viên":
                                 st.cache_data.clear()
                                 st.rerun()
 
-            # Nút Xóa
             with c_del:
                 if st.button("🗑️", key=f"del_mem_{idx}", use_container_width=True):
                     payload = {"action": "delete_member", "name": member}

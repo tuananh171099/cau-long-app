@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu co giãn & căn lề
+# CSS Tối ưu giao diện & ép ô Selectbox bật bàn phím gõ tìm kiếm trên Mobile
 st.markdown(
     """
     <style>
@@ -40,6 +40,7 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
+    /* Tối ưu ô chọn & hỗ trợ gõ phím tìm kiếm mobile */
     div[data-baseweb="select"] > div {
         min-height: 38px !important;
         font-size: 0.8rem !important;
@@ -305,7 +306,6 @@ def parse_match_row(row):
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
     video_url = str(get_val(row, "Video", 12, "")).strip()
 
-    # Tìm chính xác mùa giải dựa theo ngày đấu
     season_name = ""
     for s in seasons_info:
         if match_belong_to_season(dt_obj, s):
@@ -387,7 +387,7 @@ with st.sidebar:
 
 
 # ==========================================
-# 1. BẢNG XẾP HẠNG (ĐÃ ĐỔI TÊN & THỨ TỰ TAB, FIX HIỂN THỊ TAB THÁNG)
+# 1. BẢNG XẾP HẠNG
 # ==========================================
 if menu == "🏆 Bảng Xếp Hạng":
     st.subheader("🏆 Bảng Xếp Hạng")
@@ -500,7 +500,6 @@ if menu == "🏆 Bảng Xếp Hạng":
     if df_season_matches.empty:
         st.info(f"💡 Chưa có trận đấu nào trong `{selected_season_name}`.")
     else:
-        # Thứ tự Tab mới theo yêu cầu: BXH Ngày - BXH Cả Mùa - BXH Tháng
         tab_day, tab_all, tab_month = st.tabs(
             ["📅 BXH Ngày", "🌟 BXH Cả Mùa", "📆 BXH Tháng"]
         )
@@ -637,7 +636,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 },
             )
 
-        # 3. Tab BXH Tháng (Đã fix hiển thị đúng bảng xếp hạng)
+        # 3. Tab BXH Tháng
         with tab_month:
             c1, c2 = st.columns(2)
             with c1:
@@ -694,7 +693,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU
+# 2. CẬP NHẬT TRẬN ĐẤU (BẬT TÌM KIẾM BÀN PHÍM TRÊN MOBILE)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -1003,7 +1002,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
 
 # ==========================================
-# 5. QUẢN LÝ THÀNH VIÊN
+# 5. QUẢN LÝ THÀNH VIÊN (BỔ SUNG NÚT SỬA TÊN VĐV)
 # ==========================================
 elif menu == "⚙️ Quản lý thành viên":
     st.subheader("⚙️ Quản Lý VĐV")
@@ -1033,10 +1032,36 @@ elif menu == "⚙️ Quản lý thành viên":
         st.info("Chưa có VĐV nào.")
     else:
         for idx, member in enumerate(members_list):
-            c_name, c_btn = st.columns([3, 1])
+            c_name, c_edit, c_del = st.columns([3, 1, 1])
             with c_name:
                 st.write(f"**{idx + 1}. {member}**")
-            with c_btn:
+            
+            # Nút Chỉnh Sửa Tên
+            with c_edit:
+                with st.popover("✏️", use_container_width=True):
+                    st.markdown(f"### ✏️ Sửa tên VĐV")
+                    with st.form(f"edit_mem_form_{idx}"):
+                        updated_name = st.text_input("Tên mới:", value=member, key=f"inp_edit_mem_{idx}")
+                        submit_edit = st.form_submit_button("Lưu Tên Mới", use_container_width=True)
+                        if submit_edit:
+                            u_name_clean = updated_name.strip()
+                            if not u_name_clean:
+                                st.warning("Không được để trống tên!")
+                            elif u_name_clean in members_list and u_name_clean != member:
+                                st.error("Tên này đã tồn tại!")
+                            else:
+                                payload = {
+                                    "action": "edit_member",
+                                    "old_name": member,
+                                    "new_name": u_name_clean
+                                }
+                                requests.post(SCRIPT_URL, json=payload)
+                                st.toast(f"Đã cập nhật tên thành **{u_name_clean}**!", icon="✅")
+                                st.cache_data.clear()
+                                st.rerun()
+
+            # Nút Xóa
+            with c_del:
                 if st.button("🗑️", key=f"del_mem_{idx}", use_container_width=True):
                     payload = {"action": "delete_member", "name": member}
                     requests.post(SCRIPT_URL, json=payload)

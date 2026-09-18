@@ -420,7 +420,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                         "end_date": format_date_vn(end_s_date)
                     }
                 )
-                st.toast(f"Đã kết thúc {selected_season_name}!", icon="✅")
+                st.balloons()
+                st.toast(f"Đã kết thúc {selected_season_name}!", icon="🏸")
+                time.sleep(1)
                 st.cache_data.clear()
                 st.rerun()
 
@@ -445,7 +447,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                                 "start_date": format_date_vn(s_start_date)
                             }
                         )
-                        st.toast(f"Đã tạo {s_name_final}!", icon="🎉")
+                        st.balloons()
+                        st.toast(f"Đã tạo {s_name_final} thành công!", icon="🏸")
+                        time.sleep(1)
                         st.cache_data.clear()
                         st.rerun()
 
@@ -472,7 +476,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                         "end_date": format_date_vn(edit_end) if edit_end else ""
                     }
                     requests.post(SCRIPT_URL, json=payload)
-                    st.toast("Đã chỉnh sửa mùa giải!", icon="✅")
+                    st.balloons()
+                    st.toast("Đã chỉnh sửa mùa giải!", icon="🏸")
+                    time.sleep(1)
                     st.cache_data.clear()
                     st.rerun()
 
@@ -570,7 +576,6 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # Cột 'Tổng Trận' đã được tăng kích thước vừa vặn (75px) không che chữ
         column_configs = {
             "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=110),
             "Thắng": st.column_config.NumberColumn("Thắng", width=50),
@@ -721,7 +726,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU
+# 2. CẬP NHẬT TRẬN ĐẤU (THÊM HIỆU ỨNG QUẢ CẦU BAY)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -815,7 +820,9 @@ elif menu == "📝 Cập nhật trận đấu":
                         }
                         requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
                         
-                        st.toast("✅ Đã lưu kết quả thành công!", icon="🎉")
+                        # Hiệu ứng cầu bay bóng nổ
+                        st.balloons()
+                        st.toast(" Đã lưu kết quả thành công!", icon="🏸")
                         time.sleep(1.5)
                         st.cache_data.clear()
                         st.rerun()
@@ -893,7 +900,9 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                                     "video_url": v_link.strip()
                                 }
                             )
-                            st.toast("Đã lưu video!", icon="✅")
+                            st.balloons()
+                            st.toast("Đã lưu video thành công!", icon="🏸")
+                            time.sleep(1)
                             st.cache_data.clear()
                             st.rerun()
 
@@ -1034,7 +1043,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
 
 # ==========================================
-# 5. QUẢN LÝ THÀNH VIÊN
+# 5. QUẢN LÝ THÀNH VIÊN (THÊM HIỆU ỨNG QUẢ CẦU BAY)
 # ==========================================
 elif menu == "⚙️ Quản lý thành viên":
     st.subheader("⚙️ Quản Lý VĐV")
@@ -1053,7 +1062,9 @@ elif menu == "⚙️ Quản lý thành viên":
             else:
                 payload = {"action": "add_member", "name": name_clean}
                 requests.post(SCRIPT_URL, json=payload)
-                st.toast(f"Đã thêm VĐV **{name_clean}**!", icon="✅")
+                st.balloons()
+                st.toast(f"Đã thêm VĐV **{name_clean}** thành công!", icon="🏸")
+                time.sleep(1)
                 st.cache_data.clear()
                 st.rerun()
 
@@ -1087,7 +1098,9 @@ elif menu == "⚙️ Quản lý thành viên":
                                     "new_name": u_name_clean
                                 }
                                 requests.post(SCRIPT_URL, json=payload)
-                                st.toast(f"Đã cập nhật tên thành **{u_name_clean}**!", icon="✅")
+                                st.balloons()
+                                st.toast(f"Đã cập nhật tên thành **{u_name_clean}**!", icon="🏸")
+                                time.sleep(1)
                                 st.cache_data.clear()
                                 st.rerun()
 

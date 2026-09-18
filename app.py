@@ -386,7 +386,7 @@ with st.sidebar:
 
 
 # ==========================================
-# 1. BẢNG XẾP HẠNG (CĂN CHỈNH TỐI ƯU PIXEL CỘT CHO MOBILE)
+# 1. BẢNG XẾP HẠNG
 # ==========================================
 if menu == "🏆 Bảng Xếp Hạng":
     st.subheader("🏆 Bảng Xếp Hạng")
@@ -508,9 +508,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                 m: {
                     "Thắng": 0,
                     "Thua": 0,
-                    "Điểm Thua": 0,
-                    "Tổng": 0,
-                    "Thắng %": 0.0,
+                    "Điểm": 0,
+                    "Tổng Trận": 0,
+                    "Tỷ Lệ Thắng (%)": 0.0,
                 }
                 for m in members_list
             }
@@ -529,30 +529,30 @@ if menu == "🏆 Bảng Xếp Hạng":
                 for w in winners:
                     if w in stats:
                         stats[w]["Thắng"] += 1
-                        stats[w]["Tổng"] += 1
+                        stats[w]["Tổng Trận"] += 1
 
                 for l_player, l_bet in losers:
                     if l_player in stats:
                         stats[l_player]["Thua"] += 1
-                        stats[l_player]["Tổng"] += 1
-                        stats[l_player]["Điểm Thua"] += l_bet
+                        stats[l_player]["Tổng Trận"] += 1
+                        stats[l_player]["Điểm"] += l_bet
 
             for m in stats:
-                total = stats[m]["Tổng"]
+                total = stats[m]["Tổng Trận"]
                 if total > 0:
-                    stats[m]["Thắng %"] = round((stats[m]["Thắng"] / total) * 100, 1)
+                    stats[m]["Tỷ Lệ Thắng (%)"] = round((stats[m]["Thắng"] / total) * 100, 1)
 
             df_lb = pd.DataFrame.from_dict(stats, orient="index").reset_index()
             df_lb.rename(columns={"index": "Tên VĐV"}, inplace=True)
-            df_lb.sort_values(by=["Thắng", "Thắng %"], ascending=[False, False], inplace=True)
+            df_lb.sort_values(by=["Thắng", "Tỷ Lệ Thắng (%)"], ascending=[False, False], inplace=True)
 
             column_order = [
                 "Tên VĐV",
                 "Thắng",
                 "Thua",
-                "Điểm Thua",
-                "Tổng",
-                "Thắng %",
+                "Điểm",
+                "Tổng Trận",
+                "Tỷ Lệ Thắng (%)",
             ]
 
             df_lb = df_lb[column_order]
@@ -570,15 +570,15 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # Cấu hình độ rộng Pixel cực kỳ chuẩn vừa vặn màn hình điện thoại
+        # Cấu hình tiêu đề & độ rộng Pixel chuẩn vừa vặn màn hình
         column_configs = {
             "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=120),
             "Thắng": st.column_config.NumberColumn("Thắng", width=55),
             "Thua": st.column_config.NumberColumn("Thua", width=55),
-            "Điểm Thua": st.column_config.NumberColumn("Điểm Thua", width=80),
-            "Tổng": st.column_config.NumberColumn("Tổng", width=55),
-            "Thắng %": st.column_config.ProgressColumn(
-                "Thắng %", format="%.0f%%", min_value=0, max_value=100, width=90
+            "Điểm": st.column_config.NumberColumn("Điểm", width=65),
+            "Tổng Trận": st.column_config.NumberColumn("Tổng Trận", width=75),
+            "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ Thắng (%)", format="%.0f%%", min_value=0, max_value=100, width=110
             ),
         }
 
@@ -595,7 +595,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.info(f"💡 Không có trận nào ngày `{selected_date_str}`.")
             else:
                 df_lb_day = calculate_leaderboard(df_day)
-                total_fund_day = df_lb_day["Điểm Thua"].sum()
+                total_fund_day = df_lb_day["Điểm"].sum()
                 total_matches_day = len(df_day)
 
                 m1, m2 = st.columns(2)
@@ -603,7 +603,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     st.markdown(
                         f"""
                         <div class="metric-card">
-                            <div class="metric-title">🎯 Điểm Thua</div>
+                            <div class="metric-title">🎯 Điểm ({selected_date_str})</div>
                             <div class="metric-value" style="color: #2b8a3e;">{total_fund_day:,.0f}</div>
                         </div>
                     """,
@@ -613,7 +613,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     st.markdown(
                         f"""
                         <div class="metric-card">
-                            <div class="metric-title">🏸 Tổng Trận</div>
+                            <div class="metric-title">🏸 Tổng Số Trận</div>
                             <div class="metric-value" style="color: #1c7ed6;">{total_matches_day} Trận</div>
                         </div>
                     """,
@@ -629,9 +629,35 @@ if menu == "🏆 Bảng Xếp Hạng":
                     column_config=column_configs,
                 )
 
-        # 2. Tab BXH Cả Mùa
+        # 2. Tab BXH Cả Mùa (Thêm Thẻ Thống Kê Điểm & Tổng Trận)
         with tab_all:
             df_lb_all = calculate_leaderboard(df_season_matches)
+            total_fund_all = df_lb_all["Điểm"].sum()
+            total_matches_all = len(df_season_matches)
+
+            m1, m2 = st.columns(2)
+            with m1:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-title">🎯 ĐIỂM ({selected_season_name})</div>
+                        <div class="metric-value" style="color: #2b8a3e;">{total_fund_all:,.0f}</div>
+                    </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+            with m2:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-title">🏸 TỔNG SỐ TRẬN</div>
+                        <div class="metric-value" style="color: #1c7ed6;">{total_matches_all} Trận</div>
+                    </div>
+                """,
+                    unsafe_allow_html=True,
+                )
+
+            st.write("")
             calc_height_all = max(150, (len(df_lb_all) + 1) * 35 + 10)
             st.dataframe(
                 df_lb_all,
@@ -659,7 +685,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 st.info(f"💡 Không có trận nào trong tháng `{selected_month}/{selected_year}`.")
             else:
                 df_lb_month = calculate_leaderboard(df_month)
-                total_fund_month = df_lb_month["Điểm Thua"].sum()
+                total_fund_month = df_lb_month["Điểm"].sum()
                 total_matches_month = len(df_month)
 
                 m1, m2 = st.columns(2)
@@ -667,7 +693,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     st.markdown(
                         f"""
                         <div class="metric-card">
-                            <div class="metric-title">🎯 Điểm Thua ({selected_month}/{selected_year})</div>
+                            <div class="metric-title">🎯 Điểm ({selected_month}/{selected_year})</div>
                             <div class="metric-value" style="color: #2b8a3e;">{total_fund_month:,.0f}</div>
                         </div>
                     """,
@@ -947,7 +973,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     <div class="metric-title">📊 Hôm Nay</div>
                     <div style="font-size: 0.9rem; margin-top: 3px;">
                         Thắng: <b>{win_today}</b> | Thua: <b>{lose_today}</b><br>
-                        Điểm thua: <b style="color:#f03e3e;">{fine_today}</b>
+                        Điểm: <b style="color:#f03e3e;">{fine_today}</b>
                     </div>
                 </div>
             """,
@@ -961,7 +987,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                     <div class="metric-title">📈 Tháng {now.month}/{now.year}</div>
                     <div style="font-size: 0.9rem; margin-top: 3px;">
                         Thắng: <b>{win_month}</b> | Thua: <b>{lose_month}</b><br>
-                        Điểm thua: <b style="color:#f03e3e;">{fine_month}</b>
+                        Điểm: <b style="color:#f03e3e;">{fine_month}</b>
                     </div>
                 </div>
             """,

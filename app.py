@@ -22,7 +22,7 @@ st.markdown(
     }
 
     .main .block-container {
-        padding: 0.5rem 0.4rem !important;
+        padding: 0.5rem 0.2rem !important;
         max-width: 100% !important;
     }
 
@@ -510,7 +510,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     "Thua": 0,
                     "Điểm": 0,
                     "Tổng Trận": 0,
-                    "Tỷ Lệ Thắng (%)": 0.0,
+                    "Thắng %": 0.0,
                 }
                 for m in members_list
             }
@@ -540,11 +540,11 @@ if menu == "🏆 Bảng Xếp Hạng":
             for m in stats:
                 total = stats[m]["Tổng Trận"]
                 if total > 0:
-                    stats[m]["Tỷ Lệ Thắng (%)"] = round((stats[m]["Thắng"] / total) * 100, 1)
+                    stats[m]["Thắng %"] = round((stats[m]["Thắng"] / total) * 100, 1)
 
             df_lb = pd.DataFrame.from_dict(stats, orient="index").reset_index()
             df_lb.rename(columns={"index": "Tên VĐV"}, inplace=True)
-            df_lb.sort_values(by=["Thắng", "Tỷ Lệ Thắng (%)"], ascending=[False, False], inplace=True)
+            df_lb.sort_values(by=["Thắng", "Thắng %"], ascending=[False, False], inplace=True)
 
             column_order = [
                 "Tên VĐV",
@@ -552,7 +552,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 "Thua",
                 "Điểm",
                 "Tổng Trận",
-                "Tỷ Lệ Thắng (%)",
+                "Thắng %",
             ]
 
             df_lb = df_lb[column_order]
@@ -570,15 +570,15 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # Cấu hình tiêu đề & độ rộng Pixel chuẩn vừa vặn màn hình
+        # Cấu hình kích thước Pixel được tối ưu siêu vừa vặn cho màn hình di động
         column_configs = {
-            "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=120),
-            "Thắng": st.column_config.NumberColumn("Thắng", width=55),
-            "Thua": st.column_config.NumberColumn("Thua", width=55),
-            "Điểm": st.column_config.NumberColumn("Điểm", width=65),
-            "Tổng Trận": st.column_config.NumberColumn("Tổng Trận", width=75),
-            "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                "Tỷ Lệ Thắng (%)", format="%.0f%%", min_value=0, max_value=100, width=110
+            "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=100),
+            "Thắng": st.column_config.NumberColumn("Thắng", width=45),
+            "Thua": st.column_config.NumberColumn("Thua", width=45),
+            "Điểm": st.column_config.NumberColumn("Điểm", width=50),
+            "Tổng Trận": st.column_config.NumberColumn("Tổng Trận", width=50),
+            "Thắng %": st.column_config.ProgressColumn(
+                "Thắng %", format="%.0f%%", min_value=0, max_value=100, width=75
             ),
         }
 
@@ -629,7 +629,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                     column_config=column_configs,
                 )
 
-        # 2. Tab BXH Cả Mùa (Thêm Thẻ Thống Kê Điểm & Tổng Trận)
+        # 2. Tab BXH Cả Mùa
         with tab_all:
             df_lb_all = calculate_leaderboard(df_season_matches)
             total_fund_all = df_lb_all["Điểm"].sum()

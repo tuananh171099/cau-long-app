@@ -87,14 +87,13 @@ st.markdown(
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 6px 8px;
-        margin-bottom: 6px;
+        padding: 8px;
+        margin-bottom: 4px;
     }
     .scoreboard-compact {
         display: flex;
         flex-direction: column;
-        gap: 4px;
-        flex-grow: 1;
+        gap: 6px;
     }
     .team-row-compact {
         display: flex;
@@ -115,12 +114,12 @@ st.markdown(
         font-weight: 800;
     }
     .score-box-compact {
-        min-width: 30px;
-        height: 24px;
+        min-width: 28px;
+        height: 22px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 800;
         border-radius: 4px;
         padding: 0 4px;
@@ -368,6 +367,23 @@ def parse_match_row(row):
         "video_url": video_url,
         "season": season_name
     }
+
+
+def render_match_html(m):
+    team1_str = f"{m['p1_1']} / {m['p1_2']}"
+    team2_str = f"{m['p2_1']} / {m['p2_2']}"
+    is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
+
+    t1_class = "winner-team" if is_team1_winner else ""
+    t2_class = "" if is_team1_winner else "winner-team"
+
+    s1_class = "score-win" if is_team1_winner else "score-lose"
+    s2_class = "score-lose" if is_team1_winner else "score-win"
+
+    b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
+    b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
+
+    return f"""<div class="match-item-container"><div class="scoreboard-compact"><div class="team-row-compact {t1_class}">{b1}<div class="team-name-compact">{team1_str}</div><div class="score-box-compact {s1_class}">{m['score1']}</div></div><div class="team-row-compact {t2_class}">{b2}<div class="team-name-compact">{team2_str}</div><div class="score-box-compact {s2_class}">{m['score2']}</div></div></div></div>"""
 
 
 # Header thương hiệu HV BADMINTON
@@ -843,7 +859,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU (THU GỌN Ô ĐIỂM SÁT TÊN + NÚT TÙY CHỈNH)
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (ĐÃ SỬA LỖI HIỂN THỊ HTML)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -877,42 +893,10 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             st.markdown(f"#### 🗓️ `{match_date}`")
 
             for _, m in group.iterrows():
-                team1_str = f"{m['p1_1']} / {m['p1_2']}"
-                team2_str = f"{m['p2_1']} / {m['p2_2']}"
-                is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
-
-                t1_class = "winner-team" if is_team1_winner else ""
-                t2_class = "" if is_team1_winner else "winner-team"
-
-                s1_class = "score-win" if is_team1_winner else "score-lose"
-                s2_class = "score-lose" if is_team1_winner else "score-win"
-
-                b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
-                b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
-
-                # Tạo Layout sát lề: Cột Tỉ số (Rất sát) + Nút Tùy Chỉnh sát bên cạnh
                 col_score, col_opt = st.columns([5.5, 1])
 
                 with col_score:
-                    st.markdown(
-                        f"""
-                        <div class="match-item-container">
-                            <div class="scoreboard-compact">
-                                <div class="team-row-compact {t1_class}">
-                                    {b1}
-                                    <div class="team-name-compact">{team1_str}</div>
-                                    <div class="score-box-compact {s1_class}">{m['score1']}</div>
-                                </div>
-                                <div class="team-row-compact {t2_class}">
-                                    {b2}
-                                    <div class="team-name-compact">{team2_str}</div>
-                                    <div class="score-box-compact {s2_class}">{m['score2']}</div>
-                                </div>
-                            </div>
-                        </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(render_match_html(m), unsafe_allow_html=True)
 
                 # Popover Nút Tùy Chỉnh Trận Đấu
                 with col_opt:
@@ -1098,39 +1082,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
                 st.markdown(f"##### 🗓️ `{match_date}`")
 
                 for _, m in group.iterrows():
-                    team1_str = f"{m['p1_1']} / {m['p1_2']}"
-                    team2_str = f"{m['p2_1']} / {m['p2_2']}"
-
-                    is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
-
-                    t1_class = "winner-team" if is_team1_winner else ""
-                    t2_class = "" if is_team1_winner else "winner-team"
-
-                    s1_class = "score-win" if is_team1_winner else "score-lose"
-                    s2_class = "score-lose" if is_team1_winner else "score-win"
-
-                    b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
-                    b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
-
-                    st.markdown(
-                        f"""
-                        <div class="match-item-container">
-                            <div class="scoreboard-compact">
-                                <div class="team-row-compact {t1_class}">
-                                    {b1}
-                                    <div class="team-name-compact">{team1_str}</div>
-                                    <div class="score-box-compact {s1_class}">{m['score1']}</div>
-                                </div>
-                                <div class="team-row-compact {t2_class}">
-                                    {b2}
-                                    <div class="team-name-compact">{team2_str}</div>
-                                    <div class="score-box-compact {s2_class}">{m['score2']}</div>
-                                </div>
-                            </div>
-                        </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
+                    st.markdown(render_match_html(m), unsafe_allow_html=True)
                     with st.expander("🔍 Chi tiết trận đấu"):
                         st.write(
                             f"• **Mùa:** `{m['season']}`\n"

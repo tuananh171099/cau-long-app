@@ -355,7 +355,7 @@ def render_scoreboard_html(team1_str, score1, team2_str, score2, is_team1_winner
     """
 
 
-# Header thương hiệu chuẩn HV BADMINTON
+# Header thương hiệu HV BADMINTON
 st.markdown(
     """
     <div style="display: flex; align-items: center; margin-bottom: 6px;">
@@ -386,7 +386,7 @@ with st.sidebar:
 
 
 # ==========================================
-# 1. BẢNG XẾP HẠNG
+# 1. BẢNG XẾP HẠNG (TỐI ƯU KÍCH THƯỚC CỘT & CHIỀU CAO TỰ ĐỘNG)
 # ==========================================
 if menu == "🏆 Bảng Xếp Hạng":
     st.subheader("🏆 Bảng Xếp Hạng")
@@ -503,10 +503,10 @@ if menu == "🏆 Bảng Xếp Hạng":
             ["📅 BXH Ngày", "🌟 BXH Cả Mùa", "📆 BXH Tháng"]
         )
 
-        def calculate_leaderboard(df_filtered, show_points=False):
+        # Đã loại bỏ hoàn toàn cột "Điểm" ra khỏi Bảng xếp hạng
+        def calculate_leaderboard(df_filtered):
             stats = {
                 m: {
-                    "Điểm": 0,
                     "Thắng": 0,
                     "Thua": 0,
                     "Điểm thành viên": 0,
@@ -529,7 +529,6 @@ if menu == "🏆 Bảng Xếp Hạng":
 
                 for w in winners:
                     if w in stats:
-                        stats[w]["Điểm"] += 3
                         stats[w]["Thắng"] += 1
                         stats[w]["Tổng Trận"] += 1
 
@@ -556,8 +555,6 @@ if menu == "🏆 Bảng Xếp Hạng":
                 "Tổng Trận",
                 "Tỷ Lệ Thắng (%)",
             ]
-            if show_points:
-                column_order.insert(1, "Điểm")
 
             df_lb = df_lb[column_order]
             df_lb.reset_index(drop=True, inplace=True)
@@ -574,6 +571,18 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
+        # Cấu hình kích thước cột tối ưu nhỏ vừa chữ
+        column_configs = {
+            "Tên Thành Viên": st.column_config.TextColumn("Tên Thành Viên", width="medium"),
+            "Thắng": st.column_config.NumberColumn("Thắng", width="small"),
+            "Thua": st.column_config.NumberColumn("Thua", width="small"),
+            "Điểm thành viên": st.column_config.NumberColumn("Điểm thành viên", width="small"),
+            "Tổng Trận": st.column_config.NumberColumn("Tổng Trận", width="small"),
+            "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
+                "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100, width="medium"
+            ),
+        }
+
         # 1. Tab BXH Ngày
         with tab_day:
             selected_date = st.date_input("📅 Chọn ngày xem:", value=date.today(), format="DD/MM/YYYY")
@@ -586,7 +595,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             if df_day.empty:
                 st.info(f"💡 Không có trận nào ngày `{selected_date_str}`.")
             else:
-                df_lb_day = calculate_leaderboard(df_day, show_points=False)
+                df_lb_day = calculate_leaderboard(df_day)
                 total_fund_day = df_lb_day["Điểm thành viên"].sum()
                 total_matches_day = len(df_day)
 
@@ -613,26 +622,24 @@ if menu == "🏆 Bảng Xếp Hạng":
                     )
 
                 st.write("")
+                # height tính theo số dòng để hiển thị bảng dài không bị giới hạn 10 dòng
+                calc_height = max(150, (len(df_lb_day) + 1) * 35 + 10)
                 st.dataframe(
                     df_lb_day,
                     use_container_width=True,
-                    column_config={
-                        "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                            "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
-                        )
-                    },
+                    height=calc_height,
+                    column_config=column_configs,
                 )
 
         # 2. Tab BXH Cả Mùa
         with tab_all:
+            df_lb_all = calculate_leaderboard(df_season_matches)
+            calc_height_all = max(150, (len(df_lb_all) + 1) * 35 + 10)
             st.dataframe(
-                calculate_leaderboard(df_season_matches, show_points=True),
+                df_lb_all,
                 use_container_width=True,
-                column_config={
-                    "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                        "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
-                    )
-                },
+                height=calc_height_all,
+                column_config=column_configs,
             )
 
         # 3. Tab BXH Tháng
@@ -653,7 +660,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             if df_month.empty:
                 st.info(f"💡 Không có trận nào trong tháng `{selected_month}/{selected_year}`.")
             else:
-                df_lb_month = calculate_leaderboard(df_month, show_points=False)
+                df_lb_month = calculate_leaderboard(df_month)
                 total_fund_month = df_lb_month["Điểm thành viên"].sum()
                 total_matches_month = len(df_month)
 
@@ -680,19 +687,17 @@ if menu == "🏆 Bảng Xếp Hạng":
                     )
 
                 st.write("")
+                calc_height_month = max(150, (len(df_lb_month) + 1) * 35 + 10)
                 st.dataframe(
                     df_lb_month,
                     use_container_width=True,
-                    column_config={
-                        "Tỷ Lệ Thắng (%)": st.column_config.ProgressColumn(
-                            "Tỷ Lệ Thắng (%)", format="%.1f%%", min_value=0, max_value=100
-                        )
-                    },
+                    height=calc_height_month,
+                    column_config=column_configs,
                 )
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (DUY NHẤT 1 Ô CHỌN VĐV)
+# 2. CẬP NHẬT TRẬN ĐẤU
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")

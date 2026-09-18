@@ -509,8 +509,8 @@ if menu == "🏆 Bảng Xếp Hạng":
                     "Thắng": 0,
                     "Thua": 0,
                     "Điểm": 0,
-                    "Tổng Trận": 0,
-                    "Thắng %": 0.0,
+                    "Tổng": 0,
+                    "% Thắng": 0.0,
                 }
                 for m in members_list
             }
@@ -529,30 +529,30 @@ if menu == "🏆 Bảng Xếp Hạng":
                 for w in winners:
                     if w in stats:
                         stats[w]["Thắng"] += 1
-                        stats[w]["Tổng Trận"] += 1
+                        stats[w]["Tổng"] += 1
 
                 for l_player, l_bet in losers:
                     if l_player in stats:
                         stats[l_player]["Thua"] += 1
-                        stats[l_player]["Tổng Trận"] += 1
+                        stats[l_player]["Tổng"] += 1
                         stats[l_player]["Điểm"] += l_bet
 
             for m in stats:
-                total = stats[m]["Tổng Trận"]
+                total = stats[m]["Tổng"]
                 if total > 0:
-                    stats[m]["Thắng %"] = round((stats[m]["Thắng"] / total) * 100, 1)
+                    stats[m]["% Thắng"] = round((stats[m]["Thắng"] / total) * 100, 1)
 
             df_lb = pd.DataFrame.from_dict(stats, orient="index").reset_index()
             df_lb.rename(columns={"index": "Tên VĐV"}, inplace=True)
-            df_lb.sort_values(by=["Thắng", "Thắng %"], ascending=[False, False], inplace=True)
+            df_lb.sort_values(by=["Thắng", "% Thắng"], ascending=[False, False], inplace=True)
 
             column_order = [
                 "Tên VĐV",
                 "Thắng",
                 "Thua",
                 "Điểm",
-                "Tổng Trận",
-                "Thắng %",
+                "Tổng",
+                "% Thắng",
             ]
 
             df_lb = df_lb[column_order]
@@ -570,15 +570,15 @@ if menu == "🏆 Bảng Xếp Hạng":
             df_lb.index = [add_medal(i) for i in range(len(df_lb))]
             return df_lb
 
-        # Cấu hình kích thước Pixel được tối ưu siêu vừa vặn cho màn hình di động
+        # Đã điều chỉnh kích thước vừa vặn, không che chữ hay cắt dòng
         column_configs = {
-            "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=100),
-            "Thắng": st.column_config.NumberColumn("Thắng", width=45),
-            "Thua": st.column_config.NumberColumn("Thua", width=45),
-            "Điểm": st.column_config.NumberColumn("Điểm", width=50),
-            "Tổng Trận": st.column_config.NumberColumn("Tổng Trận", width=50),
-            "Thắng %": st.column_config.ProgressColumn(
-                "Thắng %", format="%.0f%%", min_value=0, max_value=100, width=75
+            "Tên VĐV": st.column_config.TextColumn("Tên VĐV", width=110),
+            "Thắng": st.column_config.NumberColumn("Thắng", width=50),
+            "Thua": st.column_config.NumberColumn("Thua", width=50),
+            "Điểm": st.column_config.NumberColumn("Điểm", width=55),
+            "Tổng": st.column_config.NumberColumn("Tổng", width=55),
+            "% Thắng": st.column_config.ProgressColumn(
+                "% Thắng", format="%.0f%%", min_value=0, max_value=100, width=90
             ),
         }
 

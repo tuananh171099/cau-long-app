@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn lề & Hiệu ứng Quả Cầu Lông bay lên
+# CSS Tối ưu căn lề, Scoreboard sát lề & Hiệu ứng Cầu Lông
 st.markdown(
     """
     <style>
@@ -30,7 +30,7 @@ st.markdown(
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        align-items: flex-end !important;
+        align-items: center !important;
         gap: 4px !important;
         width: 100% !important;
     }
@@ -82,64 +82,65 @@ st.markdown(
         color: #212529;
     }
     
-    /* Scoreboard */
-    .scoreboard-card {
+    /* Custom Scoreboard sát lề */
+    .match-item-container {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 4px;
+        padding: 6px 8px;
+        margin-bottom: 6px;
     }
-    .scoreboard-row {
+    .scoreboard-compact {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex-grow: 1;
+    }
+    .team-row-compact {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px;
-        border-bottom: 1px solid #f0f0f0;
+        justify-content: flex-start;
+        gap: 6px;
     }
-    .scoreboard-row:last-child {
-        border-bottom: none;
-    }
-    .team-name {
+    .team-name-compact {
         font-size: 0.85rem;
         font-weight: 600;
         color: #495057;
-        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
-    .winner-row {
-        background-color: #f8f9fa;
-    }
-    .winner-row .team-name {
+    .winner-team .team-name-compact {
         color: #000000;
         font-weight: 800;
     }
-    .score-box {
-        width: 34px;
-        height: 28px;
-        display: flex;
+    .score-box-compact {
+        min-width: 30px;
+        height: 24px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         font-weight: 800;
         border-radius: 4px;
-        margin-left: 6px;
+        padding: 0 4px;
     }
-    .score-winner {
+    .score-win {
         background-color: #212529;
         color: #ffffff;
     }
-    .score-loser {
+    .score-lose {
         background-color: #e9ecef;
         color: #495057;
     }
-    .badge-win {
+    .badge-win-tag {
         background-color: #2b8a3e;
         color: white;
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 700;
-        padding: 1px 4px;
+        padding: 1px 3px;
         border-radius: 3px;
-        margin-right: 4px;
+        flex-shrink: 0;
     }
 
     .team-card-1 {
@@ -197,7 +198,6 @@ SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZGD4GKHo9cjMhWyD0-RDq-c7
 
 
 def trigger_shuttlecock_effect():
-    """Hàm tạo hiệu ứng quả cầu lông bay lên màn hình"""
     st.markdown(
         """
         <div class="shuttlecock-fly" style="left: 15%; animation-delay: 0s;">🏸</div>
@@ -368,30 +368,6 @@ def parse_match_row(row):
         "video_url": video_url,
         "season": season_name
     }
-
-
-def render_scoreboard_html(team1_str, score1, team2_str, score2, is_team1_winner):
-    row1_class = "winner-row" if is_team1_winner else ""
-    row2_class = "" if is_team1_winner else "winner-row"
-
-    score1_class = "score-winner" if is_team1_winner else "score-loser"
-    score2_class = "score-loser" if is_team1_winner else "score-winner"
-
-    badge1 = '<span class="badge-win">WIN</span>' if is_team1_winner else ""
-    badge2 = "" if is_team1_winner else '<span class="badge-win">WIN</span>'
-
-    return f"""
-    <div class="scoreboard-card">
-        <div class="scoreboard-row {row1_class}">
-            <div class="team-name">{badge1} {team1_str}</div>
-            <div class="score-box {score1_class}">{score1}</div>
-        </div>
-        <div class="scoreboard-row {row2_class}">
-            <div class="team-name">{badge2} {team2_str}</div>
-            <div class="score-box {score2_class}">{score2}</div>
-        </div>
-    </div>
-    """
 
 
 # Header thương hiệu HV BADMINTON
@@ -765,7 +741,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (CÓ HIỆU ỨNG CẦU LÔNG BAY)
+# 2. CẬP NHẬT TRẬN ĐẤU
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -859,7 +835,6 @@ elif menu == "📝 Cập nhật trận đấu":
                         }
                         requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
                         
-                        # Kích hoạt hiệu ứng quả cầu lông bay lên
                         trigger_shuttlecock_effect()
                         st.toast("Đã lưu kết quả thành công!", icon="🏸")
                         time.sleep(1.8)
@@ -868,7 +843,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (THU GỌN Ô ĐIỂM SÁT TÊN + NÚT TÙY CHỈNH)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -904,15 +879,109 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             for _, m in group.iterrows():
                 team1_str = f"{m['p1_1']} / {m['p1_2']}"
                 team2_str = f"{m['p2_1']} / {m['p2_2']}"
-
                 is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
 
-                st.markdown(
-                    render_scoreboard_html(
-                        team1_str, m['score1'], team2_str, m['score2'], is_team1_winner
-                    ),
-                    unsafe_allow_html=True,
-                )
+                t1_class = "winner-team" if is_team1_winner else ""
+                t2_class = "" if is_team1_winner else "winner-team"
+
+                s1_class = "score-win" if is_team1_winner else "score-lose"
+                s2_class = "score-lose" if is_team1_winner else "score-win"
+
+                b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
+                b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
+
+                # Tạo Layout sát lề: Cột Tỉ số (Rất sát) + Nút Tùy Chỉnh sát bên cạnh
+                col_score, col_opt = st.columns([5.5, 1])
+
+                with col_score:
+                    st.markdown(
+                        f"""
+                        <div class="match-item-container">
+                            <div class="scoreboard-compact">
+                                <div class="team-row-compact {t1_class}">
+                                    {b1}
+                                    <div class="team-name-compact">{team1_str}</div>
+                                    <div class="score-box-compact {s1_class}">{m['score1']}</div>
+                                </div>
+                                <div class="team-row-compact {t2_class}">
+                                    {b2}
+                                    <div class="team-name-compact">{team2_str}</div>
+                                    <div class="score-box-compact {s2_class}">{m['score2']}</div>
+                                </div>
+                            </div>
+                        </div>
+                    """,
+                        unsafe_allow_html=True,
+                    )
+
+                # Popover Nút Tùy Chỉnh Trận Đấu
+                with col_opt:
+                    with st.popover("⚙️", use_container_width=True):
+                        st.markdown(f"### ⚙️ Tùy Chỉnh Trận Đấu")
+                        st.caption(f"🗓️ Ngày: `{m['date']}` | Mùa: `{m['season']}`")
+
+                        with st.form(f"edit_match_form_{m['row_index']}"):
+                            st.markdown("**🔵 Đội 1:**")
+                            e_p1_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p1_1']) if m['p1_1'] in members_list else 0, key=f"ep11_{m['row_index']}")
+                            e_p1_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p1_2']) if m['p1_2'] in members_list else 0, key=f"ep12_{m['row_index']}")
+                            e_s1 = st.number_input("Tỉ số Đội 1:", min_value=0, max_value=30, value=m['score1'], key=f"es1_{m['row_index']}")
+
+                            st.markdown("**🔴 Đội 2:**")
+                            e_p2_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p2_1']) if m['p2_1'] in members_list else 0, key=f"ep21_{m['row_index']}")
+                            e_p2_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p2_2']) if m['p2_2'] in members_list else 0, key=f"ep22_{m['row_index']}")
+                            e_s2 = st.number_input("Tỉ số Đội 2:", min_value=0, max_value=30, value=m['score2'], key=f"es2_{m['row_index']}")
+
+                            v_link_pop = st.text_input("🔗 Link Video YouTube:", value=m["video_url"], key=f"evid_{m['row_index']}")
+
+                            save_m_edit = st.form_submit_button("💾 Lưu Thay Đổi", use_container_width=True)
+
+                            if save_m_edit:
+                                e_players = [e_p1_1, e_p1_2, e_p2_1, e_p2_2]
+                                if len(set(e_players)) < 4:
+                                    st.error("❌ Trùng tên VĐV!")
+                                elif e_s1 == e_s2:
+                                    st.error("❌ Tỉ số hai đội không được bằng nhau!")
+                                else:
+                                    e_winner = "Đội 1" if int(e_s1) > int(e_s2) else "Đội 2"
+                                    updated_match_data = {
+                                        "Ngày": m["date"],
+                                        "Đội 1 - VĐV 1": e_p1_1,
+                                        "Kèo 1_1": m["k1_1"],
+                                        "Đội 1 - VĐV 2": e_p1_2,
+                                        "Kèo 1_2": m["k1_2"],
+                                        "Điểm Đội 1": int(e_s1),
+                                        "Đội 2 - VĐV 1": e_p2_1,
+                                        "Kèo 2_1": m["k2_1"],
+                                        "Đội 2 - VĐV 2": e_p2_2,
+                                        "Kèo 2_2": m["k2_2"],
+                                        "Điểm Đội 2": int(e_s2),
+                                        "Đội Thắng": e_winner,
+                                        "Video": v_link_pop.strip(),
+                                        "Mùa Giải": m["season"]
+                                    }
+                                    requests.post(
+                                        SCRIPT_URL,
+                                        json={
+                                            "action": "edit_match",
+                                            "row_index": m["row_index"],
+                                            "match": updated_match_data
+                                        }
+                                    )
+                                    trigger_shuttlecock_effect()
+                                    st.toast("Đã cập nhật trận đấu!", icon="🏸")
+                                    time.sleep(1.5)
+                                    st.cache_data.clear()
+                                    st.rerun()
+
+                        st.markdown("---")
+                        if st.button("🗑️ Xóa trận đấu này", key=f"del_m_{m['row_index']}", use_container_width=True):
+                            requests.post(
+                                SCRIPT_URL,
+                                json={"action": "delete_match", "row_index": m['row_index']},
+                            )
+                            st.toast("Đã xóa trận!", icon="🗑️")
+                            st.cache_data.clear()
+                            st.rerun()
 
                 with st.expander("🔍 Chi tiết & Video"):
                     st.write(
@@ -926,34 +995,6 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                             st.video(m["video_url"])
                         except Exception:
                             st.warning("🔗 Link video lỗi.")
-
-                    with st.form(f"form_vid_{m['row_index']}"):
-                        v_link = st.text_input("🔗 Link YouTube:", value=m["video_url"], key=f"v_in_{m['row_index']}")
-                        save_v_btn = st.form_submit_button("💾 Lưu Video", use_container_width=True)
-                        if save_v_btn:
-                            requests.post(
-                                SCRIPT_URL,
-                                json={
-                                    "action": "update_video",
-                                    "row_index": m["row_index"],
-                                    "video_url": v_link.strip()
-                                }
-                            )
-                            trigger_shuttlecock_effect()
-                            st.toast("Đã lưu video thành công!", icon="🏸")
-                            time.sleep(1.5)
-                            st.cache_data.clear()
-                            st.rerun()
-
-                    st.markdown("---")
-                    if st.button("🗑️ Xóa trận đấu này", key=f"del_match_{m['row_index']}", use_container_width=True):
-                        requests.post(
-                            SCRIPT_URL,
-                            json={"action": "delete_match", "row_index": m['row_index']},
-                        )
-                        st.toast("Đã xóa trận!", icon="✅")
-                        st.cache_data.clear()
-                        st.rerun()
 
 
 # ==========================================
@@ -1062,10 +1103,32 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
                     is_team1_winner = (m['winner'] == "Đội 1") or (m['score1'] > m['score2'])
 
+                    t1_class = "winner-team" if is_team1_winner else ""
+                    t2_class = "" if is_team1_winner else "winner-team"
+
+                    s1_class = "score-win" if is_team1_winner else "score-lose"
+                    s2_class = "score-lose" if is_team1_winner else "score-win"
+
+                    b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
+                    b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
+
                     st.markdown(
-                        render_scoreboard_html(
-                            team1_str, m['score1'], team2_str, m['score2'], is_team1_winner
-                        ),
+                        f"""
+                        <div class="match-item-container">
+                            <div class="scoreboard-compact">
+                                <div class="team-row-compact {t1_class}">
+                                    {b1}
+                                    <div class="team-name-compact">{team1_str}</div>
+                                    <div class="score-box-compact {s1_class}">{m['score1']}</div>
+                                </div>
+                                <div class="team-row-compact {t2_class}">
+                                    {b2}
+                                    <div class="team-name-compact">{team2_str}</div>
+                                    <div class="score-box-compact {s2_class}">{m['score2']}</div>
+                                </div>
+                            </div>
+                        </div>
+                    """,
                         unsafe_allow_html=True,
                     )
                     with st.expander("🔍 Chi tiết trận đấu"):
@@ -1082,7 +1145,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
 
 # ==========================================
-# 5. QUẢN LÝ THÀNH VIÊN (HIỆU ỨNG CẦU LÔNG BAY)
+# 5. QUẢN LÝ THÀNH VIÊN
 # ==========================================
 elif menu == "⚙️ Quản lý thành viên":
     st.subheader("⚙️ Quản Lý VĐV")

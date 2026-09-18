@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu giao diện Mobile
+# CSS Tối ưu căn lề & co giãn chuẩn Mobile
 st.markdown(
     """
     <style>
@@ -40,12 +40,12 @@ st.markdown(
         flex: 1 1 auto !important;
     }
 
-    .stTextInput input {
-        height: 38px !important;
+    div[data-baseweb="select"] > div {
+        min-height: 38px !important;
         font-size: 0.85rem !important;
-        padding: 2px 6px !important;
+        padding: 0 2px !important;
     }
-
+    
     .stNumberInput input {
         height: 38px !important;
         font-size: 0.85rem !important;
@@ -692,7 +692,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (BẬT BÀN PHÍM GÕ TÌM TÊN 100% TRÊN MOBILE)
+# 2. CẬP NHẬT TRẬN ĐẤU (DUY NHẤT 1 Ô CHỌN/GÕ CHUẨN ĐẸP)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -704,32 +704,6 @@ elif menu == "📝 Cập nhật trận đấu":
     else:
         st.caption(f"🏆 Mùa hiện tại: **{current_season_name}**")
 
-        # Hàm hiển thị ô nhập gõ văn bản bật bàn phím + ô lọc gợi ý
-        def render_player_input(label, key_name):
-            search_input = st.text_input(
-                label, 
-                value="", 
-                placeholder="Gõ ký tự tìm tên...", 
-                key=f"txt_{key_name}"
-            )
-            
-            # Lọc danh sách VĐV theo từ khóa đã gõ
-            if search_input.strip():
-                filtered = [m for m in members_list if search_input.strip().lower() in m.lower()]
-            else:
-                filtered = members_list
-            
-            opts = ["-- Chọn VĐV --"] + filtered
-            chosen = st.selectbox(
-                f"Danh sách {label}", 
-                opts, 
-                index=0, 
-                key=f"sel_{key_name}", 
-                label_visibility="collapsed"
-            )
-            
-            return chosen if chosen != "-- Chọn VĐV --" else None
-
         with st.form("match_form", clear_on_submit=False):
             match_date = st.date_input("🗓️ Ngày Thi Đấu", value=date.today(), format="DD/MM/YYYY")
 
@@ -738,7 +712,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp1_name, cp1_bet, cp1_team = st.columns([2.2, 1, 1.3])
             with cp1_name:
-                p1 = render_player_input("VĐV 1", "p1")
+                p1 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p1")
             with cp1_bet:
                 k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
             with cp1_team:
@@ -746,7 +720,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp2_name, cp2_bet, _ = st.columns([2.2, 1, 1.3])
             with cp2_name:
-                p2 = render_player_input("VĐV 2", "p2")
+                p2 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p2")
             with cp2_bet:
                 k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
 
@@ -757,7 +731,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp3_name, cp3_bet, cp3_team = st.columns([2.2, 1, 1.3])
             with cp3_name:
-                p3 = render_player_input("VĐV 1 (Đội 2)", "p3")
+                p3 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p3")
             with cp3_bet:
                 k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
             with cp3_team:
@@ -765,7 +739,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp4_name, cp4_bet, _ = st.columns([2.2, 1, 1.3])
             with cp4_name:
-                p4 = render_player_input("VĐV 2 (Đội 2)", "p4")
+                p4 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p4")
             with cp4_bet:
                 k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
 

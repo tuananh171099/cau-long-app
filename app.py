@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu hiển thị dọc gọn gàng, khóa nút ⚙️ nằm cạnh khung Chi tiết & Video
+# CSS Tối ưu ép nút ⚙️ và Chi tiết & Video luôn nằm cùng 1 dòng ngang trên mobile
 st.markdown(
     """
     <style>
@@ -24,6 +24,21 @@ st.markdown(
     .main .block-container {
         padding: 0.5rem 0.4rem !important;
         max-width: 100% !important;
+    }
+
+    /* ĐẶC BIỆT: Ép các cột trong phần lịch sử trận đấu KHÔNG BAO GIỜ bị rớt dòng trên điện thoại */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 4px !important;
+        width: 100% !important;
+    }
+
+    [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
     }
 
     div[data-baseweb="select"] > div {
@@ -51,14 +66,14 @@ st.markdown(
         margin: 0 !important;
     }
 
-    /* Thu gọn phần Expander (Chi tiết & Video) để nằm khít cạnh nút ⚙️ */
+    /* Thu gọn phần Expander (Chi tiết & Video) nằm khít bên cạnh nút ⚙️ */
     div[data-testid="stExpander"] {
         border-radius: 6px !important;
         margin-top: 0px !important;
         width: 100% !important;
     }
     div[data-testid="stExpander"] details summary {
-        padding: 5px 8px !important;
+        padding: 4px 8px !important;
         min-height: 34px !important;
     }
     div[data-testid="stExpander"] details summary span {
@@ -85,7 +100,7 @@ st.markdown(
         color: #212529;
     }
     
-    /* Bảng điểm giữ nguyên độ rộng đẹp mắt */
+    /* Bảng điểm giữ nguyên độ rộng chuẩn */
     .match-item-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -96,6 +111,7 @@ st.markdown(
         gap: 5px;
         width: 100%;
         box-sizing: border-box;
+        margin-bottom: 2px;
     }
 
     .team-grid-row {
@@ -107,7 +123,7 @@ st.markdown(
     }
 
     .team-name-text {
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         font-weight: 600;
         color: #495057;
         white-space: nowrap;
@@ -877,7 +893,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU (DÀN DỌC: NÚT ⚙️ ĐỨNG CẠNH CHI TIẾT & VIDEO)
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (CỐ ĐỊNH NÚT ⚙️ NẰM CẠNH CHI TIẾT & VIDEO TRÊN MỌI THIẾT BỊ)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -911,10 +927,10 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             st.markdown(f"#### 🗓️ `{match_date}`")
 
             for _, m in group.iterrows():
-                # Hiển thị bảng điểm trận đấu
+                # 1. Hiển thị bảng điểm trận đấu
                 st.markdown(render_match_html(m), unsafe_allow_html=True)
                 
-                # Đặt nút ⚙️ (Bên trái) nằm ngay cạnh khung Chi tiết & Video (Bên phải) chuẩn theo ảnh số 3
+                # 2. Ép Nút ⚙️ (Bên trái) và Khung Chi tiết & Video (Bên phải) nằm chung 1 hàng ngang tuyệt đối
                 c_pop, c_exp = st.columns([0.18, 0.82])
                 with c_pop:
                     with st.popover("⚙️"):

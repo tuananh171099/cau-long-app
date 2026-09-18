@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu ép hiển thị thanh gõ tìm kiếm bật bàn phím di động 100%
+# CSS Tối ưu giao diện & hỗ trợ nhập liệu trên Mobile
 st.markdown(
     """
     <style>
@@ -698,21 +698,8 @@ if menu == "🏆 Bảng Xếp Hạng":
                 )
 
 
-# Hàm tự tạo Selectbox bật được bàn phím gõ tìm kiếm ký tự trên Mobile
-def render_player_select(label, options, default_index=0, key=None):
-    # Cho phép tìm kiếm bằng ô nhập văn bản lọc danh sách
-    search_term = st.text_input(f"🔍 Tìm {label}:", placeholder="Gõ tên VĐV...", key=f"search_{key}")
-    filtered_options = [opt for opt in options if search_term.strip().lower() in opt.lower()]
-    if not filtered_options:
-        filtered_options = options
-
-    idx = min(default_index, len(filtered_options) - 1) if filtered_options else 0
-    selected_val = st.selectbox(label, filtered_options, index=idx, key=f"select_{key}")
-    return selected_val
-
-
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (HỖ TRỢ GÕ TÌM KIẾM TRÊN MOBILE)
+# 2. CẬP NHẬT TRẬN ĐẤU
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")

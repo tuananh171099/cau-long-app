@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn lề & co giãn chuẩn Mobile
+# CSS Tối ưu căn lề & Hiệu ứng Quả Cầu Lông bay lên
 st.markdown(
     """
     <style>
@@ -162,6 +162,31 @@ st.markdown(
         font-size: 0.9rem;
         margin-bottom: 6px;
     }
+
+    /* Animation Quả Cầu Lông Bay */
+    @keyframes flyUp {
+        0% {
+            bottom: -50px;
+            opacity: 1;
+            transform: scale(0.8) rotate(0deg);
+        }
+        50% {
+            transform: scale(1.2) rotate(15deg);
+        }
+        100% {
+            bottom: 105vh;
+            opacity: 0;
+            transform: scale(1) rotate(-15deg);
+        }
+    }
+
+    .shuttlecock-fly {
+        position: fixed;
+        z-index: 999999;
+        font-size: 2.8rem;
+        pointer-events: none;
+        animation: flyUp 2.2s ease-out forwards;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -169,6 +194,20 @@ st.markdown(
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZGD4GKHo9cjMhWyD0-RDq-c7DuWLWnGwBuI77NDCOmGh15fSIG5tX3o9pbl6zaKEhiQ/exec"
+
+
+def trigger_shuttlecock_effect():
+    """Hàm tạo hiệu ứng quả cầu lông bay lên màn hình"""
+    st.markdown(
+        """
+        <div class="shuttlecock-fly" style="left: 15%; animation-delay: 0s;">🏸</div>
+        <div class="shuttlecock-fly" style="left: 35%; animation-delay: 0.2s;">🏸</div>
+        <div class="shuttlecock-fly" style="left: 55%; animation-delay: 0.1s;">🏸</div>
+        <div class="shuttlecock-fly" style="left: 75%; animation-delay: 0.3s;">🏸</div>
+        <div class="shuttlecock-fly" style="left: 88%; animation-delay: 0.05s;">🏸</div>
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 def format_date_vn(dt_val):
@@ -420,9 +459,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                         "end_date": format_date_vn(end_s_date)
                     }
                 )
-                st.balloons()
+                trigger_shuttlecock_effect()
                 st.toast(f"Đã kết thúc {selected_season_name}!", icon="🏸")
-                time.sleep(1)
+                time.sleep(1.5)
                 st.cache_data.clear()
                 st.rerun()
 
@@ -447,9 +486,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                                 "start_date": format_date_vn(s_start_date)
                             }
                         )
-                        st.balloons()
+                        trigger_shuttlecock_effect()
                         st.toast(f"Đã tạo {s_name_final} thành công!", icon="🏸")
-                        time.sleep(1)
+                        time.sleep(1.5)
                         st.cache_data.clear()
                         st.rerun()
 
@@ -476,9 +515,9 @@ if menu == "🏆 Bảng Xếp Hạng":
                         "end_date": format_date_vn(edit_end) if edit_end else ""
                     }
                     requests.post(SCRIPT_URL, json=payload)
-                    st.balloons()
+                    trigger_shuttlecock_effect()
                     st.toast("Đã chỉnh sửa mùa giải!", icon="🏸")
-                    time.sleep(1)
+                    time.sleep(1.5)
                     st.cache_data.clear()
                     st.rerun()
 
@@ -726,7 +765,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (THÊM HIỆU ỨNG QUẢ CẦU BAY)
+# 2. CẬP NHẬT TRẬN ĐẤU (CÓ HIỆU ỨNG CẦU LÔNG BAY)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -820,10 +859,10 @@ elif menu == "📝 Cập nhật trận đấu":
                         }
                         requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
                         
-                        # Hiệu ứng cầu bay bóng nổ
-                        st.balloons()
-                        st.toast(" Đã lưu kết quả thành công!", icon="🏸")
-                        time.sleep(1.5)
+                        # Kích hoạt hiệu ứng quả cầu lông bay lên
+                        trigger_shuttlecock_effect()
+                        st.toast("Đã lưu kết quả thành công!", icon="🏸")
+                        time.sleep(1.8)
                         st.cache_data.clear()
                         st.rerun()
 
@@ -900,9 +939,9 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                                     "video_url": v_link.strip()
                                 }
                             )
-                            st.balloons()
+                            trigger_shuttlecock_effect()
                             st.toast("Đã lưu video thành công!", icon="🏸")
-                            time.sleep(1)
+                            time.sleep(1.5)
                             st.cache_data.clear()
                             st.rerun()
 
@@ -1043,7 +1082,7 @@ elif menu == "🔍 Tìm kiếm thành viên":
 
 
 # ==========================================
-# 5. QUẢN LÝ THÀNH VIÊN (THÊM HIỆU ỨNG QUẢ CẦU BAY)
+# 5. QUẢN LÝ THÀNH VIÊN (HIỆU ỨNG CẦU LÔNG BAY)
 # ==========================================
 elif menu == "⚙️ Quản lý thành viên":
     st.subheader("⚙️ Quản Lý VĐV")
@@ -1062,9 +1101,9 @@ elif menu == "⚙️ Quản lý thành viên":
             else:
                 payload = {"action": "add_member", "name": name_clean}
                 requests.post(SCRIPT_URL, json=payload)
-                st.balloons()
+                trigger_shuttlecock_effect()
                 st.toast(f"Đã thêm VĐV **{name_clean}** thành công!", icon="🏸")
-                time.sleep(1)
+                time.sleep(1.5)
                 st.cache_data.clear()
                 st.rerun()
 
@@ -1098,9 +1137,9 @@ elif menu == "⚙️ Quản lý thành viên":
                                     "new_name": u_name_clean
                                 }
                                 requests.post(SCRIPT_URL, json=payload)
-                                st.balloons()
+                                trigger_shuttlecock_effect()
                                 st.toast(f"Đã cập nhật tên thành **{u_name_clean}**!", icon="🏸")
-                                time.sleep(1)
+                                time.sleep(1.5)
                                 st.cache_data.clear()
                                 st.rerun()
 

@@ -692,7 +692,7 @@ if menu == "🏆 Bảng Xếp Hạng":
 
 
 # ==========================================
-# 2. CẬP NHẬT TRẬN ĐẤU (DUY NHẤT 1 Ô CHỌN/GÕ CHUẨN ĐẸP)
+# 2. CẬP NHẬT TRẬN ĐẤU (DUY NHẤT 1 Ô CHỌN VĐV)
 # ==========================================
 elif menu == "📝 Cập nhật trận đấu":
     st.subheader("📝 Ghi Nhận Trận Đấu Mới")
@@ -712,7 +712,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp1_name, cp1_bet, cp1_team = st.columns([2.2, 1, 1.3])
             with cp1_name:
-                p1 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p1")
+                p1 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn VĐV...", key="p1")
             with cp1_bet:
                 k1_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_1")
             with cp1_team:
@@ -720,7 +720,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp2_name, cp2_bet, _ = st.columns([2.2, 1, 1.3])
             with cp2_name:
-                p2 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p2")
+                p2 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn VĐV...", key="p2")
             with cp2_bet:
                 k1_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k1_2")
 
@@ -731,7 +731,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp3_name, cp3_bet, cp3_team = st.columns([2.2, 1, 1.3])
             with cp3_name:
-                p3 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p3")
+                p3 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn VĐV...", key="p3")
             with cp3_bet:
                 k2_1 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_1")
             with cp3_team:
@@ -739,7 +739,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
             cp4_name, cp4_bet, _ = st.columns([2.2, 1, 1.3])
             with cp4_name:
-                p4 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn/Gõ VĐV...", key="p4")
+                p4 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn VĐV...", key="p4")
             with cp4_bet:
                 k2_2 = st.number_input("Điểm", min_value=0, max_value=10, value=1, step=1, key="k2_2")
 

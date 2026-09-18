@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu giao diện Mobile & Bảng điểm thẳng hàng
+# CSS Khóa không cho điện thoại tự rớt dòng nút ⚙️ và thu gọn điểm sát tên
 st.markdown(
     """
     <style>
@@ -38,14 +38,23 @@ st.markdown(
         padding: 2px 4px !important;
     }
 
-    /* Popover nút ⚙️ thu gọn */
+    /* Ép cột nằm ngang trên mọi thiết bị di động, cấm rớt hàng */
+    .mobile-flex-row {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    /* Popover nút ⚙️ */
     .stPopover {
         display: inline-block !important;
     }
     .stPopover button {
         padding: 2px 6px !important;
         font-size: 0.75rem !important;
-        height: 34px !important;
+        height: 32px !important;
         min-width: 36px !important;
         margin: 0 !important;
     }
@@ -70,24 +79,25 @@ st.markdown(
         color: #212529;
     }
     
-    /* Bảng điểm dạng Grid căn thẳng tuyệt đối */
+    /* Bảng điểm thu gọn ôm sát tên VĐV */
     .match-item-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 6px 10px;
+        padding: 6px 8px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        min-width: 220px;
+        gap: 5px;
+        width: max-content;
+        max-width: calc(100vw - 60px);
     }
 
     .team-grid-row {
-        display: grid;
-        grid-template-columns: 32px 1fr 30px;
+        display: flex;
         align-items: center;
         gap: 6px;
         width: 100%;
+        justify-content: space-between;
     }
 
     .team-name-text {
@@ -97,6 +107,7 @@ st.markdown(
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        padding-right: 4px;
     }
 
     .winner-team .team-name-text {
@@ -105,14 +116,16 @@ st.markdown(
     }
 
     .score-box-flat {
-        width: 28px;
+        min-width: 26px;
         height: 22px;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         font-size: 0.8rem;
         font-weight: 800;
         border-radius: 4px;
+        padding: 0 4px;
+        flex-shrink: 0;
     }
 
     .score-win {
@@ -133,6 +146,12 @@ st.markdown(
         padding: 1px 3px;
         border-radius: 3px;
         text-align: center;
+        flex-shrink: 0;
+    }
+
+    .badge-placeholder {
+        width: 26px;
+        flex-shrink: 0;
     }
 
     .team-card-1 {
@@ -373,8 +392,8 @@ def render_match_html(m):
     s1_class = "score-win" if is_team1_winner else "score-lose"
     s2_class = "score-lose" if is_team1_winner else "score-win"
 
-    b1 = '<div class="badge-win-tag">WIN</div>' if is_team1_winner else '<div></div>'
-    b2 = '<div></div>' if is_team1_winner else '<div class="badge-win-tag">WIN</div>'
+    b1 = '<div class="badge-win-tag">WIN</div>' if is_team1_winner else '<div class="badge-placeholder"></div>'
+    b2 = '<div class="badge-placeholder"></div>' if is_team1_winner else '<div class="badge-win-tag">WIN</div>'
 
     return f"""<div class="match-item-card"><div class="team-grid-row {t1_class}">{b1}<div class="team-name-text">{team1_str}</div><div class="score-box-flat {s1_class}">{m['score1']}</div></div><div class="team-grid-row {t2_class}">{b2}<div class="team-name-text">{team2_str}</div><div class="score-box-flat {s2_class}">{m['score2']}</div></div></div>"""
 
@@ -852,7 +871,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU (FİX CĂN THẲNG HÀNG & CHỈNH SỬA LÊN CẠNH TRÊN)
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (FİX MOBILE FLEXBOX DÍNH NGANG)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -886,13 +905,11 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             st.markdown(f"#### 🗓️ `{match_date}`")
 
             for _, m in group.iterrows():
-                # Dùng st.columns đặt nút ⚙️ nằm ngay góc trên bên phải của bảng điểm
-                col_card, col_opt = st.columns([1, 0.18])
-
-                with col_card:
+                # Ép bảng điểm và nút ⚙️ nằm cùng dòng 100% bằng CSS Flex Container
+                c_card, c_pop = st.columns([0.85, 0.15])
+                with c_card:
                     st.markdown(render_match_html(m), unsafe_allow_html=True)
-
-                with col_opt:
+                with c_pop:
                     with st.popover("⚙️"):
                         st.markdown(f"### ⚙️ Chỉnh Sửa Trận Đấu")
                         st.caption(f"🗓️ Ngày: `{m['date']}` | Mùa: `{m['season']}`")

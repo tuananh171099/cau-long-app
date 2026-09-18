@@ -366,6 +366,7 @@ def parse_match_row(row):
         "p1_2": p1_2, "k1_2": k1_2,
         "score1": score1,
         "p2_1": p2_1, "k2_1": k2_1,
+        "p2_2": p2_2, "k2_2": k2_2,  # Bổ sung k2_2 bị thiếu gây ra lỗi KeyError
         "score2": score2,
         "winner": winner,
         "video_url": video_url,
@@ -863,7 +864,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU (TỐI ƯU CỰC HẠN CHO ĐIỆN THOẠI)
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (FİX KEYERROR K2_2)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -897,10 +898,8 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             st.markdown(f"#### 🗓️ `{match_date}`")
 
             for _, m in group.iterrows():
-                # Render Card Tỉ số trực tiếp
                 st.markdown(render_match_html(m), unsafe_allow_html=True)
 
-                # Nút Chỉnh sửa & Chi tiết liền kề
                 with st.expander("🔍 Chi tiết & Chỉnh sửa"):
                     st.write(
                         f"• **Mùa:** `{m['season']}`\n"

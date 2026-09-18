@@ -26,6 +26,21 @@ st.markdown(
         max-width: 100% !important;
     }
 
+    /* BẮT BUỘC STREAMLIT NẰM NGANG TRÊN DI ĐỘNG - KHÔNG BỊ BẺ DÒNG */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        width: 50% !important;
+        min-width: 0 !important;
+        flex: 1 1 0% !important;
+    }
+
     div[data-baseweb="select"] > div {
         min-height: 38px !important;
         font-size: 0.85rem !important;
@@ -38,9 +53,9 @@ st.markdown(
         padding: 2px 4px !important;
     }
 
-    /* Popover nút ⚙️ */
+    /* Popover nút ⚙️ thu gọn */
     .stPopover {
-        display: inline-block !important;
+        display: block !important;
         width: 100% !important;
     }
     .stPopover button {
@@ -55,6 +70,7 @@ st.markdown(
     div[data-testid="stExpander"] {
         border-radius: 6px !important;
         margin-top: 0px !important;
+        width: 100% !important;
     }
     div[data-testid="stExpander"] details summary {
         padding: 4px 6px !important;
@@ -83,12 +99,12 @@ st.markdown(
         color: #212529;
     }
     
-    /* Bảng điểm thu gọn giữ nguyên */
+    /* Bảng điểm thu gọn ôm sát tên VĐV */
     .match-item-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 6px 8px;
+        padding: 6px 6px;
         display: flex;
         flex-direction: column;
         gap: 5px;
@@ -99,19 +115,19 @@ st.markdown(
     .team-grid-row {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         width: 100%;
         justify-content: space-between;
     }
 
     .team-name-text {
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         font-weight: 600;
         color: #495057;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding-right: 4px;
+        padding-right: 2px;
     }
 
     .winner-team .team-name-text {
@@ -120,15 +136,15 @@ st.markdown(
     }
 
     .score-box-flat {
-        min-width: 26px;
-        height: 22px;
+        min-width: 22px;
+        height: 20px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 800;
         border-radius: 4px;
-        padding: 0 4px;
+        padding: 0 3px;
         flex-shrink: 0;
     }
 
@@ -145,16 +161,16 @@ st.markdown(
     .badge-win-tag {
         background-color: #2b8a3e;
         color: white;
-        font-size: 0.6rem;
+        font-size: 0.55rem;
         font-weight: 700;
-        padding: 1px 3px;
+        padding: 1px 2px;
         border-radius: 3px;
         text-align: center;
         flex-shrink: 0;
     }
 
     .badge-placeholder {
-        width: 26px;
+        width: 22px;
         flex-shrink: 0;
     }
 
@@ -875,7 +891,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU (DÀN NÚT ⚙️ CẠNH EXPANDER VÀ ĐẨY TRẬN BÊN DƯỚI LÊN TẬN DỤNG KHOẢNG TRỐNG)
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (FİX DÀN 2 CỘT SONG SONG TRÊN DI ĐỘNG chuẩn 100%)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -904,15 +920,14 @@ elif menu == "🛠️ Lịch sử các trận đấu":
         df_filtered = df_filtered.sort_values(by=["date_obj", "row_index"], ascending=[False, False])
         grouped_dates = df_filtered["date"].unique()
 
-        # Hàm hiển thị một block trận đấu hoàn chỉnh (Gồm Bảng điểm + Nút⚙️ + Expander Chi tiết)
         def render_single_match_block(m):
             st.markdown(render_match_html(m), unsafe_allow_html=True)
             
-            # Đặt Nút ⚙️ và Expander nằm cùng 1 dòng
-            c_pop, c_exp = st.columns([0.25, 0.75])
+            # Ép Nút ⚙️ và Expander nằm cùng 1 dòng
+            c_pop, c_exp = st.columns([0.28, 0.72])
             with c_pop:
                 with st.popover("⚙️"):
-                    st.markdown(f"### ⚙️ Chỉnh Sửa Trận Đấu")
+                    st.markdown(f"### ⚙️ Chỉnh Sửa")
                     st.caption(f"🗓️ Ngày: `{m['date']}` | Mùa: `{m['season']}`")
 
                     with st.form(f"edit_match_form_{m['row_index']}"):
@@ -967,7 +982,7 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                                 st.rerun()
 
                     st.markdown("---")
-                    if st.button("🗑️ Xóa trận đấu này", key=f"del_m_{m['row_index']}", use_container_width=True):
+                    if st.button("🗑️ Xóa trận đấu", key=f"del_m_{m['row_index']}", use_container_width=True):
                         requests.post(
                             SCRIPT_URL,
                             json={"action": "delete_match", "row_index": m['row_index']},
@@ -1012,10 +1027,9 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             group = df_filtered[df_filtered["date"] == match_date]
             st.markdown(f"#### 🗓️ `{match_date}`")
 
-            # Ghép 2 trận nằm song song 2 cột trên cùng 1 hàng
             match_list = [row for _, row in group.iterrows()]
             for i in range(0, len(match_list), 2):
-                col_left, col_right = st.columns(2)
+                col_left, col_right = st.columns([1, 1])
 
                 # TRẬN 1 (BÊN TRÁI)
                 with col_left:

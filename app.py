@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn lề, thu gọn Scoreboard & Căn thẳng hàng tên + điểm
+# CSS Tối ưu căn lề & Dùng Flexbox ép điểm số sát tên VĐV
 st.markdown(
     """
     <style>
@@ -24,20 +24,6 @@ st.markdown(
     .main .block-container {
         padding: 0.5rem 0.2rem !important;
         max-width: 100% !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        gap: 4px !important;
-        width: 100% !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] > div {
-        min-width: 0 !important;
-        flex: 1 1 auto !important;
     }
 
     div[data-baseweb="select"] > div {
@@ -82,50 +68,47 @@ st.markdown(
         color: #212529;
     }
     
-    /* Scoreboard Căn thẳng hàng & Thu gọn ôm sát */
+    /* Layout sát lề ép tỉ số dính sát tên VĐV */
+    .match-row-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        width: 100%;
+    }
+
     .match-item-container {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         padding: 6px 8px;
-        margin-bottom: 4px;
-        display: inline-block;
-        width: 100%;
-    }
-    .scoreboard-compact {
-        display: flex;
+        display: inline-flex;
         flex-direction: column;
         gap: 4px;
+        max-width: fit-content;
     }
+
     .team-row-compact {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 6px;
-        width: 100%;
     }
-    .team-info-left {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        overflow: hidden;
-        flex-grow: 1;
-    }
+
     .team-name-compact {
         font-size: 0.85rem;
         font-weight: 600;
         color: #495057;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         line-height: 1.2;
     }
+
     .winner-team .team-name-compact {
         color: #000000;
         font-weight: 800;
     }
+
     .score-box-compact {
-        min-width: 28px;
+        min-width: 26px;
         height: 22px;
         display: inline-flex;
         align-items: center;
@@ -136,14 +119,17 @@ st.markdown(
         padding: 0 4px;
         flex-shrink: 0;
     }
+
     .score-win {
         background-color: #212529;
         color: #ffffff;
     }
+
     .score-lose {
         background-color: #e9ecef;
         color: #495057;
     }
+
     .badge-win-tag {
         background-color: #2b8a3e;
         color: white;
@@ -395,7 +381,7 @@ def render_match_html(m):
     b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
     b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
 
-    return f"""<div class="match-item-container"><div class="scoreboard-compact"><div class="team-row-compact {t1_class}"><div class="team-info-left">{b1}<div class="team-name-compact">{team1_str}</div></div><div class="score-box-compact {s1_class}">{m['score1']}</div></div><div class="team-row-compact {t2_class}"><div class="team-info-left">{b2}<div class="team-name-compact">{team2_str}</div></div><div class="score-box-compact {s2_class}">{m['score2']}</div></div></div></div>"""
+    return f"""<div class="match-item-container"><div class="team-row-compact {t1_class}">{b1}<div class="team-name-compact">{team1_str}</div><div class="score-box-compact {s1_class}">{m['score1']}</div></div><div class="team-row-compact {t2_class}">{b2}<div class="team-name-compact">{team2_str}</div><div class="score-box-compact {s2_class}">{m['score2']}</div></div></div>"""
 
 
 # Header thương hiệu HV BADMINTON
@@ -871,7 +857,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU (FİX TRIỆT ĐỂ BẢNG ĐIỂM + NÚT ⚙️ DÍNH SÁT)
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -905,80 +891,79 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             st.markdown(f"#### 🗓️ `{match_date}`")
 
             for _, m in group.iterrows():
-                # Tỉ lệ 3.8 : 1 giúp thu gọn khoảng trống thừa sát nút ⚙️
-                col_score, col_opt = st.columns([3.8, 1])
+                # Ép bảng điểm và Nút ⚙️ vào cùng 1 dòng dính sát lề trái
+                st.markdown('<div class="match-row-wrapper">', unsafe_allow_html=True)
+                st.markdown(render_match_html(m), unsafe_allow_html=True)
 
-                with col_score:
-                    st.markdown(render_match_html(m), unsafe_allow_html=True)
+                # Nút Popover Cài Đặt
+                with st.popover("⚙️"):
+                    st.markdown(f"### ⚙️ Chỉnh Sửa Trận Đấu")
+                    st.caption(f"🗓️ Ngày: `{m['date']}` | Mùa: `{m['season']}`")
 
-                # Popover Nút Tùy Chỉnh Trận Đấu
-                with col_opt:
-                    with st.popover("⚙️", use_container_width=True):
-                        st.markdown(f"### ⚙️ Chỉnh Sửa Trận Đấu")
-                        st.caption(f"🗓️ Ngày: `{m['date']}` | Mùa: `{m['season']}`")
+                    with st.form(f"edit_match_form_{m['row_index']}"):
+                        st.markdown("**🔵 Đội 1:**")
+                        e_p1_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p1_1']) if m['p1_1'] in members_list else 0, key=f"ep11_{m['row_index']}")
+                        e_p1_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p1_2']) if m['p1_2'] in members_list else 0, key=f"ep12_{m['row_index']}")
+                        e_s1 = st.number_input("Tỉ số Đội 1:", min_value=0, max_value=30, value=m['score1'], key=f"es1_{m['row_index']}")
 
-                        with st.form(f"edit_match_form_{m['row_index']}"):
-                            st.markdown("**🔵 Đội 1:**")
-                            e_p1_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p1_1']) if m['p1_1'] in members_list else 0, key=f"ep11_{m['row_index']}")
-                            e_p1_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p1_2']) if m['p1_2'] in members_list else 0, key=f"ep12_{m['row_index']}")
-                            e_s1 = st.number_input("Tỉ số Đội 1:", min_value=0, max_value=30, value=m['score1'], key=f"es1_{m['row_index']}")
+                        st.markdown("**🔴 Đội 2:**")
+                        e_p2_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p2_1']) if m['p2_1'] in members_list else 0, key=f"ep21_{m['row_index']}")
+                        e_p2_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p2_2']) if m['p2_2'] in members_list else 0, key=f"ep22_{m['row_index']}")
+                        e_s2 = st.number_input("Tỉ số Đội 2:", min_value=0, max_value=30, value=m['score2'], key=f"es2_{m['row_index']}")
 
-                            st.markdown("**🔴 Đội 2:**")
-                            e_p2_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p2_1']) if m['p2_1'] in members_list else 0, key=f"ep21_{m['row_index']}")
-                            e_p2_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p2_2']) if m['p2_2'] in members_list else 0, key=f"ep22_{m['row_index']}")
-                            e_s2 = st.number_input("Tỉ số Đội 2:", min_value=0, max_value=30, value=m['score2'], key=f"es2_{m['row_index']}")
+                        save_m_edit = st.form_submit_button("💾 Lưu Thay Đổi", use_container_width=True)
 
-                            save_m_edit = st.form_submit_button("💾 Lưu Thay Đổi", use_container_width=True)
-
-                            if save_m_edit:
-                                e_players = [e_p1_1, e_p1_2, e_p2_1, e_p2_2]
-                                if len(set(e_players)) < 4:
-                                    st.error("❌ Trùng tên VĐV!")
-                                elif e_s1 == e_s2:
-                                    st.error("❌ Tỉ số hai đội không được bằng nhau!")
-                                else:
-                                    e_winner = "Đội 1" if int(e_s1) > int(e_s2) else "Đội 2"
-                                    updated_match_data = {
-                                        "Ngày": m["date"],
-                                        "Đội 1 - VĐV 1": e_p1_1,
-                                        "Kèo 1_1": m["k1_1"],
-                                        "Đội 1 - VĐV 2": e_p1_2,
-                                        "Kèo 1_2": m["k1_2"],
-                                        "Điểm Đội 1": int(e_s1),
-                                        "Đội 2 - VĐV 1": e_p2_1,
-                                        "Kèo 2_1": m["k2_1"],
-                                        "Đội 2 - VĐV 2": e_p2_2,
-                                        "Kèo 2_2": m["k2_2"],
-                                        "Điểm Đội 2": int(e_s2),
-                                        "Đội Thắng": e_winner,
-                                        "Video": m["video_url"],
-                                        "Mùa Giải": m["season"]
+                        if save_m_edit:
+                            e_players = [e_p1_1, e_p1_2, e_p2_1, e_p2_2]
+                            if len(set(e_players)) < 4:
+                                st.error("❌ Trùng tên VĐV!")
+                            elif e_s1 == e_s2:
+                                st.error("❌ Tỉ số hai đội không được bằng nhau!")
+                            else:
+                                e_winner = "Đội 1" if int(e_s1) > int(e_s2) else "Đội 2"
+                                updated_match_data = {
+                                    "Ngày": m["date"],
+                                    "Đội 1 - VĐV 1": e_p1_1,
+                                    "Kèo 1_1": m["k1_1"],
+                                    "Đội 1 - VĐV 2": e_p1_2,
+                                    "Kèo 1_2": m["k1_2"],
+                                    "Điểm Đội 1": int(e_s1),
+                                    "Đội 2 - VĐV 1": e_p2_1,
+                                    "Kèo 2_1": m["k2_1"],
+                                    "Đội 2 - VĐV 2": e_p2_2,
+                                    "Kèo 2_2": m["k2_2"],
+                                    "Điểm Đội 2": int(e_s2),
+                                    "Đội Thắng": e_winner,
+                                    "Video": m["video_url"],
+                                    "Mùa Giải": m["season"]
+                                }
+                                requests.post(
+                                    SCRIPT_URL,
+                                    json={
+                                        "action": "edit_match",
+                                        "row_index": m["row_index"],
+                                        "match": updated_match_data
                                     }
-                                    requests.post(
-                                        SCRIPT_URL,
-                                        json={
-                                            "action": "edit_match",
-                                            "row_index": m["row_index"],
-                                            "match": updated_match_data
-                                        }
-                                    )
-                                    trigger_shuttlecock_effect()
-                                    st.toast("Đã cập nhật trận đấu!", icon="🏸")
-                                    time.sleep(1.5)
-                                    st.cache_data.clear()
-                                    st.rerun()
+                                )
+                                trigger_shuttlecock_effect()
+                                st.toast("Đã cập nhật trận đấu!", icon="🏸")
+                                time.sleep(1.5)
+                                st.cache_data.clear()
+                                st.rerun()
 
-                        st.markdown("---")
-                        if st.button("🗑️ Xóa trận đấu này", key=f"del_m_{m['row_index']}", use_container_width=True):
-                            requests.post(
-                                SCRIPT_URL,
-                                json={"action": "delete_match", "row_index": m['row_index']},
-                            )
-                            st.toast("Đã xóa trận!", icon="🗑️")
-                            st.cache_data.clear()
-                            st.rerun()
+                    st.markdown("---")
+                    if st.button("🗑️ Xóa trận đấu này", key=f"del_m_{m['row_index']}", use_container_width=True):
+                        requests.post(
+                            SCRIPT_URL,
+                            json={"action": "delete_match", "row_index": m['row_index']},
+                        )
+                        st.toast("Đã xóa trận!", icon="🗑️")
+                        st.cache_data.clear()
+                        st.rerun()
 
-                # Phần Link Video YouTube để lại trong Chi Tiết & Video như cũ
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                # Link Video YouTube giữ nguyên tại vị trí Chi Tiết & Video như cũ
                 with st.expander("🔍 Chi tiết & Video"):
                     st.write(
                         f"• **Mùa:** `{m['season']}`\n"

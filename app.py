@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# CSS Tối ưu căn lề, Scoreboard sát lề & Hiệu ứng Cầu Lông
+# CSS Tối ưu căn lề, thu gọn Scoreboard & Căn thẳng hàng tên + điểm
 st.markdown(
     """
     <style>
@@ -82,24 +82,34 @@ st.markdown(
         color: #212529;
     }
     
-    /* Custom Scoreboard sát lề */
+    /* Scoreboard Căn thẳng hàng & Thu gọn ôm sát */
     .match-item-container {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        padding: 8px;
+        padding: 6px 8px;
         margin-bottom: 4px;
+        display: inline-block;
+        width: 100%;
     }
     .scoreboard-compact {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
     }
     .team-row-compact {
         display: flex;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: space-between;
         gap: 6px;
+        width: 100%;
+    }
+    .team-info-left {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        overflow: hidden;
+        flex-grow: 1;
     }
     .team-name-compact {
         font-size: 0.85rem;
@@ -108,6 +118,7 @@ st.markdown(
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        line-height: 1.2;
     }
     .winner-team .team-name-compact {
         color: #000000;
@@ -123,6 +134,7 @@ st.markdown(
         font-weight: 800;
         border-radius: 4px;
         padding: 0 4px;
+        flex-shrink: 0;
     }
     .score-win {
         background-color: #212529;
@@ -383,7 +395,7 @@ def render_match_html(m):
     b1 = '<span class="badge-win-tag">WIN</span>' if is_team1_winner else ""
     b2 = "" if is_team1_winner else '<span class="badge-win-tag">WIN</span>'
 
-    return f"""<div class="match-item-container"><div class="scoreboard-compact"><div class="team-row-compact {t1_class}">{b1}<div class="team-name-compact">{team1_str}</div><div class="score-box-compact {s1_class}">{m['score1']}</div></div><div class="team-row-compact {t2_class}">{b2}<div class="team-name-compact">{team2_str}</div><div class="score-box-compact {s2_class}">{m['score2']}</div></div></div></div>"""
+    return f"""<div class="match-item-container"><div class="scoreboard-compact"><div class="team-row-compact {t1_class}"><div class="team-info-left">{b1}<div class="team-name-compact">{team1_str}</div></div><div class="score-box-compact {s1_class}">{m['score1']}</div></div><div class="team-row-compact {t2_class}"><div class="team-info-left">{b2}<div class="team-name-compact">{team2_str}</div></div><div class="score-box-compact {s2_class}">{m['score2']}</div></div></div></div>"""
 
 
 # Header thương hiệu HV BADMINTON
@@ -859,7 +871,7 @@ elif menu == "📝 Cập nhật trận đấu":
 
 
 # ==========================================
-# 3. LỊCH SỬ CÁC TRẬN ĐẤU (ĐÃ SỬA LỖI HIỂN THỊ HTML)
+# 3. LỊCH SỬ CÁC TRẬN ĐẤU
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
@@ -893,7 +905,8 @@ elif menu == "🛠️ Lịch sử các trận đấu":
             st.markdown(f"#### 🗓️ `{match_date}`")
 
             for _, m in group.iterrows():
-                col_score, col_opt = st.columns([5.5, 1])
+                # Tỉ lệ 3.8 : 1 giúp thu gọn khoảng trống thừa sát nút ⚙️
+                col_score, col_opt = st.columns([3.8, 1])
 
                 with col_score:
                     st.markdown(render_match_html(m), unsafe_allow_html=True)
@@ -901,7 +914,7 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                 # Popover Nút Tùy Chỉnh Trận Đấu
                 with col_opt:
                     with st.popover("⚙️", use_container_width=True):
-                        st.markdown(f"### ⚙️ Tùy Chỉnh Trận Đấu")
+                        st.markdown(f"### ⚙️ Chỉnh Sửa Trận Đấu")
                         st.caption(f"🗓️ Ngày: `{m['date']}` | Mùa: `{m['season']}`")
 
                         with st.form(f"edit_match_form_{m['row_index']}"):
@@ -914,8 +927,6 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                             e_p2_1 = st.selectbox("VĐV 1:", members_list, index=members_list.index(m['p2_1']) if m['p2_1'] in members_list else 0, key=f"ep21_{m['row_index']}")
                             e_p2_2 = st.selectbox("VĐV 2:", members_list, index=members_list.index(m['p2_2']) if m['p2_2'] in members_list else 0, key=f"ep22_{m['row_index']}")
                             e_s2 = st.number_input("Tỉ số Đội 2:", min_value=0, max_value=30, value=m['score2'], key=f"es2_{m['row_index']}")
-
-                            v_link_pop = st.text_input("🔗 Link Video YouTube:", value=m["video_url"], key=f"evid_{m['row_index']}")
 
                             save_m_edit = st.form_submit_button("💾 Lưu Thay Đổi", use_container_width=True)
 
@@ -940,7 +951,7 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                                         "Kèo 2_2": m["k2_2"],
                                         "Điểm Đội 2": int(e_s2),
                                         "Đội Thắng": e_winner,
-                                        "Video": v_link_pop.strip(),
+                                        "Video": m["video_url"],
                                         "Mùa Giải": m["season"]
                                     }
                                     requests.post(
@@ -967,6 +978,7 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                             st.cache_data.clear()
                             st.rerun()
 
+                # Phần Link Video YouTube để lại trong Chi Tiết & Video như cũ
                 with st.expander("🔍 Chi tiết & Video"):
                     st.write(
                         f"• **Mùa:** `{m['season']}`\n"
@@ -979,6 +991,24 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                             st.video(m["video_url"])
                         except Exception:
                             st.warning("🔗 Link video lỗi.")
+
+                    with st.form(f"form_vid_{m['row_index']}"):
+                        v_link = st.text_input("🔗 Link YouTube:", value=m["video_url"], key=f"v_in_{m['row_index']}")
+                        save_v_btn = st.form_submit_button("💾 Lưu Video", use_container_width=True)
+                        if save_v_btn:
+                            requests.post(
+                                SCRIPT_URL,
+                                json={
+                                    "action": "update_video",
+                                    "row_index": m["row_index"],
+                                    "video_url": v_link.strip()
+                                }
+                            )
+                            trigger_shuttlecock_effect()
+                            st.toast("Đã lưu video thành công!", icon="🏸")
+                            time.sleep(1.5)
+                            st.cache_data.clear()
+                            st.rerun()
 
 
 # ==========================================

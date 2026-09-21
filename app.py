@@ -1,8 +1,12 @@
 from datetime import date, datetime
-import time
+from io import StringIO
+import threading
+
 import pandas as pd
 import requests
 import streamlit as st
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 st.set_page_config(
     page_title="CLB Cầu Lông - HV BADMINTON",
     page_icon="🏸",
@@ -286,6 +290,40 @@ div[data-baseweb="select"] > div,
 )
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
 SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZGD4GKHo9cjMhWyD0-RDq-c7DuWLWnGwBuI77NDCOmGh15fSIG5tX3o9pbl6zaKEhiQ/exec"
+
+# =========================================================
+# TỐI ƯU HIỆU NĂNG / NHIỀU NGƯỜI DÙNG
+# =========================================================
+DATA_CACHE_TTL = 15          # giây - giảm số lần đọc Google Sheet
+CONNECT_TIMEOUT = 5          # giây
+READ_TIMEOUT = 15            # giây
+
+@st.cache_resource
+def get_http_session():
+    """Dùng lại kết nối HTTP giữa các lần rerun / các session."""
+    session = requests.Session()
+    retry = Retry(
+        total=2,
+        connect=2,
+        read=2,
+        backoff_factor=0.25,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset(["GET"]),  # không retry POST để tránh ghi trùng
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(
+        max_retries=retry,
+        pool_connections=20,
+        pool_maxsize=40,
+    )
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+@st.cache_resource
+def get_write_lock():
+    """Tuần tự hóa thao tác ghi trong cùng tiến trình Streamlit."""
+    return threading.Lock()
 def trigger_shuttlecock_effect():
     st.markdown(
         """
@@ -324,25 +362,91 @@ def get_sheet_csv_url(url, sheet_name="Sheet1"):
         base = url.split("/edit")[0]
         return f"{base}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
     return url
-@st.cache_data(ttl=2)
+def fetch_sheet_uncached(sheet_name):
+    """Đọc trực tiếp một sheet, dùng cho cache loader và kiểm tra trước khi ghi."""
+    url = get_sheet_csv_url(SHEET_URL, sheet_name)
+    response = get_http_session().get(
+        url,
+        timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+    )
+    response.raise_for_status()
+    return pd.read_csv(StringIO(response.text))
+
+@st.cache_data(ttl=DATA_CACHE_TTL, max_entries=1, show_spinner=False)
 def load_data():
+    """Đọc 3 sheet, dùng cache chung để nhiều người không gọi Google liên tục."""
     try:
-        url_members = get_sheet_csv_url(SHEET_URL, "Members")
-        df_m = pd.read_csv(url_members)
-        members = df_m["Tên Thành Viên"].dropna().astype(str).str.strip().tolist()
+        df_m = fetch_sheet_uncached("Members")
+        members = (
+            df_m["Tên Thành Viên"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .loc[lambda x: x.ne("")]
+            .tolist()
+        )
     except Exception:
-        members = ["Nguyễn Văn A", "Trần Văn B", "Lê Thị C", "Phạm Văn D"]
+        members = []
+
     try:
-        url_matches = get_sheet_csv_url(SHEET_URL, "Matches")
-        df_matches = pd.read_csv(url_matches)
+        df_matches = fetch_sheet_uncached("Matches")
     except Exception:
         df_matches = pd.DataFrame()
+
     try:
-        url_seasons = get_sheet_csv_url(SHEET_URL, "Seasons")
-        df_seasons = pd.read_csv(url_seasons)
+        df_seasons = fetch_sheet_uncached("Seasons")
     except Exception:
-        df_seasons = pd.DataFrame(columns=["Tên Mùa", "Ngày Bắt Đầu", "Ngày Kết Thúc", "Trạng Thái"])
+        df_seasons = pd.DataFrame(
+            columns=["Tên Mùa", "Ngày Bắt Đầu", "Ngày Kết Thúc", "Trạng Thái"]
+        )
+
     return members, df_matches, df_seasons
+
+def post_script(payload, match_context=None):
+    """
+    Gửi một thao tác ghi an toàn.
+    - Có timeout để request không treo vô hạn.
+    - Không retry POST để tránh ghi trùng.
+    - Với sửa/xóa/video trận đấu, kiểm tra lại row_index ngay trước khi ghi.
+    """
+    try:
+        with get_write_lock():
+            payload_to_send = dict(payload)
+
+            if match_context is not None and "row_index" in payload_to_send:
+                resolved_row = resolve_match_row_index(match_context)
+                if resolved_row is None:
+                    st.warning(
+                        "⚠️ Danh sách trận vừa thay đổi bởi người khác. "
+                        "Mình đã chặn thao tác để tránh sửa/xóa nhầm trận. "
+                        "Hãy tải lại trang rồi thử lại."
+                    )
+                    load_data.clear()
+                    return False
+                payload_to_send["row_index"] = resolved_row
+
+            response = get_http_session().post(
+                SCRIPT_URL,
+                json=payload_to_send,
+                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            )
+            response.raise_for_status()
+        return True
+    except requests.RequestException as exc:
+        st.error(
+            "❌ Không thể ghi dữ liệu lúc này. Vui lòng thử lại sau vài giây. "
+            f"({type(exc).__name__})"
+        )
+        return False
+
+def finish_write(success_message, icon="🏸", effect=True):
+    """Chỉ xóa cache dữ liệu, không xóa toàn bộ cache/resource của app."""
+    load_data.clear()
+    if effect:
+        trigger_shuttlecock_effect()
+    st.toast(success_message, icon=icon)
+    st.rerun()
+
 members_list, matches_df, seasons_df = load_data()
 def to_int(val, default=0):
     try:
@@ -425,6 +529,78 @@ def parse_match_row(row):
         "video_url": video_url,
         "season": season_name
     }
+
+def build_parsed_matches_df(df):
+    """Parse mỗi trận đúng 1 lần trong một rerun thay vì parse lặp ở nhiều màn hình."""
+    if df.empty:
+        return pd.DataFrame()
+
+    records = []
+    for idx, row in df.iterrows():
+        m = parse_match_row(row)
+        m["row_index"] = idx + 2
+        records.append(m)
+    return pd.DataFrame(records)
+
+def _match_identity(m):
+    return (
+        str(m.get("date", "")).strip(),
+        str(m.get("p1_1", "")).strip(),
+        str(m.get("p1_2", "")).strip(),
+        str(m.get("p2_1", "")).strip(),
+        str(m.get("p2_2", "")).strip(),
+    )
+
+def resolve_match_row_index(match_context):
+    """
+    Lấy lại row_index mới nhất ngay trước khi sửa/xóa.
+    Việc này giảm nguy cơ người A xóa một hàng làm người B sửa nhầm hàng kế tiếp.
+    """
+    try:
+        fresh_df = fetch_sheet_uncached("Matches")
+    except requests.RequestException:
+        return None
+    except Exception:
+        return None
+
+    if fresh_df.empty:
+        return None
+
+    target_identity = _match_identity(match_context)
+    original_row = to_int(match_context.get("row_index", 0), 0)
+
+    # 1) Ưu tiên đúng row cũ nếu nội dung nhận diện vẫn trùng.
+    original_pos = original_row - 2
+    if 0 <= original_pos < len(fresh_df):
+        candidate = parse_match_row(fresh_df.iloc[original_pos])
+        if _match_identity(candidate) == target_identity:
+            return original_row
+
+    # 2) Nếu row bị xê dịch do người khác thêm/xóa, tìm lại theo ngày + 4 VĐV.
+    candidates = []
+    for idx, row in fresh_df.iterrows():
+        candidate = parse_match_row(row)
+        if _match_identity(candidate) == target_identity:
+            candidates.append((idx + 2, candidate))
+
+    if len(candidates) == 1:
+        return candidates[0][0]
+
+    # 3) Nếu cùng 4 VĐV đánh nhiều trận trong ngày, dùng tỉ số cũ để phân biệt.
+    if len(candidates) > 1:
+        exact = [
+            row_index
+            for row_index, candidate in candidates
+            if candidate["score1"] == to_int(match_context.get("score1"), 0)
+            and candidate["score2"] == to_int(match_context.get("score2"), 0)
+        ]
+        if len(exact) == 1:
+            return exact[0]
+
+    # Không chắc chắn thì chặn thao tác thay vì sửa/xóa nhầm.
+    return None
+
+matches_parsed_df = build_parsed_matches_df(matches_df)
 def render_match_html(m, full_width=False):
     team1_str = f"{m['p1_1']} / {m['p1_2']}"
     team2_str = f"{m['p2_1']} / {m['p2_2']}"
@@ -478,19 +654,13 @@ if menu == "🏆 Bảng Xếp Hạng":
             end_s_date = st.date_input("🗓️ Chọn Ngày Kết Thúc:", value=date.today(), format="DD/MM/YYYY")
             confirm_end = st.button("Đồng ý kết thúc mùa", use_container_width=True)
             if confirm_end:
-                requests.post(
-                    SCRIPT_URL,
-                    json={
-                        "action": "end_season",
-                        "season_name": selected_season_name,
-                        "end_date": format_date_vn(end_s_date)
-                    }
-                )
-                trigger_shuttlecock_effect()
-                st.toast(f"Đã kết thúc {selected_season_name}!", icon="🏸")
-                time.sleep(1.5)
-                st.cache_data.clear()
-                st.rerun()
+                payload = {
+                    "action": "end_season",
+                    "season_name": selected_season_name,
+                    "end_date": format_date_vn(end_s_date),
+                }
+                if post_script(payload):
+                    finish_write(f"Đã kết thúc {selected_season_name}!")
     with col_p:
         with st.popover("⚙️ Tùy chỉnh mùa", use_container_width=True):
             st.markdown("### ➕ Thêm Mùa Mới")
@@ -503,19 +673,13 @@ if menu == "🏆 Bảng Xếp Hạng":
                     if s_name_final in seasons_list:
                         st.error("❌ Tên mùa giải đã tồn tại!")
                     else:
-                        requests.post(
-                            SCRIPT_URL,
-                            json={
-                                "action": "add_season",
-                                "season_name": s_name_final,
-                                "start_date": format_date_vn(s_start_date)
-                            }
-                        )
-                        trigger_shuttlecock_effect()
-                        st.toast(f"Đã tạo {s_name_final} thành công!", icon="🏸")
-                        time.sleep(1.5)
-                        st.cache_data.clear()
-                        st.rerun()
+                        payload = {
+                            "action": "add_season",
+                            "season_name": s_name_final,
+                            "start_date": format_date_vn(s_start_date),
+                        }
+                        if post_script(payload):
+                            finish_write(f"Đã tạo {s_name_final} thành công!")
             st.markdown("---")
             st.markdown(f"### ✏️ Chỉnh Sửa Mùa")
             with st.form("edit_season_form"):
@@ -536,30 +700,26 @@ if menu == "🏆 Bảng Xếp Hạng":
                         "start_date": format_date_vn(edit_start),
                         "end_date": format_date_vn(edit_end) if edit_end else ""
                     }
-                    requests.post(SCRIPT_URL, json=payload)
-                    trigger_shuttlecock_effect()
-                    st.toast("Đã chỉnh sửa mùa giải!", icon="🏸")
-                    time.sleep(1.5)
-                    st.cache_data.clear()
-                    st.rerun()
+                    if post_script(payload):
+                        finish_write("Đã chỉnh sửa mùa giải!")
             st.markdown("---")
             st.markdown(f"### 🗑️ Xóa Mùa")
             if st.button("Xóa Mùa Này", use_container_width=True):
-                requests.post(
-                    SCRIPT_URL,
-                    json={
-                        "action": "delete_season",
-                        "season_name": selected_season_name
-                    }
-                )
-                st.toast(f"Đã xóa {selected_season_name}!", icon="🗑️")
-                st.cache_data.clear()
-                st.rerun()
+                payload = {
+                    "action": "delete_season",
+                    "season_name": selected_season_name,
+                }
+                if post_script(payload):
+                    finish_write(
+                        f"Đã xóa {selected_season_name}!",
+                        icon="🗑️",
+                        effect=False,
+                    )
     df_season_matches = pd.DataFrame()
-    if not matches_df.empty:
-        df_season_matches = matches_df[
-            matches_df.apply(lambda r: match_belong_to_season(parse_match_row(r)["date_obj"], curr_s_item), axis=1)
-        ]
+    if not matches_parsed_df.empty:
+        df_season_matches = matches_parsed_df[
+            matches_parsed_df["season"] == selected_season_name
+        ].copy()
     if df_season_matches.empty:
         st.info(f"💡 Chưa có trận đấu nào trong `{selected_season_name}`.")
     else:
@@ -577,8 +737,7 @@ if menu == "🏆 Bảng Xếp Hạng":
                 }
                 for m in members_list
             }
-            for _, row in df_filtered.iterrows():
-                m_info = parse_match_row(row)
+            for _, m_info in df_filtered.iterrows():
                 is_team1_win = (m_info["winner"] == "Đội 1") or (m_info["score1"] > m_info["score2"])
                 if is_team1_win:
                     winners = [m_info["p1_1"], m_info["p1_2"]]
@@ -637,7 +796,7 @@ if menu == "🏆 Bảng Xếp Hạng":
             selected_date = st.date_input("📅 Chọn ngày xem:", value=date.today(), format="DD/MM/YYYY")
             selected_date_str = format_date_vn(selected_date)
             df_day = df_season_matches[
-                df_season_matches.apply(lambda r: parse_match_row(r)["date"] == selected_date_str, axis=1)
+                df_season_matches["date"] == selected_date_str
             ]
             if df_day.empty:
                 st.info(f"💡 Không có trận nào ngày `{selected_date_str}`.")
@@ -715,11 +874,11 @@ if menu == "🏆 Bảng Xếp Hạng":
                 selected_year = st.number_input("Năm", min_value=2024, max_value=2030, value=datetime.now().year)
             with c2:
                 selected_month = st.number_input("Tháng", min_value=1, max_value=12, value=datetime.now().month)
-            def is_in_month(row):
-                m_info = parse_match_row(row)
-                dt = m_info["date_obj"]
-                return dt.month == selected_month and dt.year == selected_year
-            df_month = df_season_matches[df_season_matches.apply(is_in_month, axis=1)]
+            df_month = df_season_matches[
+                df_season_matches["date_obj"].apply(
+                    lambda dt: dt.month == selected_month and dt.year == selected_year
+                )
+            ]
             if df_month.empty:
                 st.info(f"💡 Không có trận nào trong tháng `{selected_month}/{selected_year}`.")
             else:
@@ -833,26 +992,18 @@ elif menu == "📝 Cập nhật trận đấu":
                             "Video": video_input.strip(),
                             "Mùa Giải": assigned_season
                         }
-                        requests.post(SCRIPT_URL, json={"action": "add_match", "match": new_match})
-                        trigger_shuttlecock_effect()
-                        st.toast("Đã lưu kết quả thành công!", icon="🏸")
-                        time.sleep(1.8)
-                        st.cache_data.clear()
-                        st.rerun()
+                        payload = {"action": "add_match", "match": new_match}
+                        if post_script(payload):
+                            finish_write("Đã lưu kết quả thành công!")
 # ==========================================
 # 3. LỊCH SỬ CÁC TRẬN ĐẤU
 # ==========================================
 elif menu == "🛠️ Lịch sử các trận đấu":
     st.subheader("🛠️ Lịch Sử Các Trận Đấu")
-    if matches_df.empty:
+    if matches_parsed_df.empty:
         st.info("Chưa có trận đấu nào.")
     else:
-        matches_parsed = []
-        for idx, row in matches_df.iterrows():
-            m = parse_match_row(row)
-            m["row_index"] = idx + 2
-            matches_parsed.append(m)
-        df_p = pd.DataFrame(matches_parsed)
+        df_p = matches_parsed_df.copy()
         unique_dates = sorted(df_p["date_obj"].unique(), reverse=True)
         date_options = ["Tất cả các ngày"] + [d.strftime("%d/%m/%Y") for d in unique_dates]
         selected_history_date = st.selectbox("📅 Lọc xem theo ngày:", date_options)
@@ -906,18 +1057,18 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                                     "Video": m["video_url"],
                                     "Mùa Giải": m["season"],
                                 }
-                                requests.post(SCRIPT_URL, json={"action": "edit_match", "row_index": m["row_index"], "match": updated_match_data})
-                                trigger_shuttlecock_effect()
-                                st.toast("Đã cập nhật trận đấu!", icon="🏸")
-                                time.sleep(1.5)
-                                st.cache_data.clear()
-                                st.rerun()
+                                payload = {
+                                    "action": "edit_match",
+                                    "row_index": m["row_index"],
+                                    "match": updated_match_data,
+                                }
+                                if post_script(payload, match_context=m):
+                                    finish_write("Đã cập nhật trận đấu!")
                     st.markdown("---")
                     if st.button("🗑️ Xóa trận đấu này", key=f"del_m_{m['row_index']}", use_container_width=True):
-                        requests.post(SCRIPT_URL, json={"action": "delete_match", "row_index": m["row_index"]})
-                        st.toast("Đã xóa trận!", icon="🗑️")
-                        st.cache_data.clear()
-                        st.rerun()
+                        payload = {"action": "delete_match", "row_index": m["row_index"]}
+                        if post_script(payload, match_context=m):
+                            finish_write("Đã xóa trận!", icon="🗑️", effect=False)
             with c_detail:
                 with st.popover("🔍 Chi tiết & Video", use_container_width=True):
                     st.write(
@@ -934,12 +1085,13 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                         v_link = st.text_input("🔗 Link YouTube:", value=m["video_url"], key=f"v_in_{m['row_index']}")
                         save_v_btn = st.form_submit_button("💾 Lưu Video", use_container_width=True)
                         if save_v_btn:
-                            requests.post(SCRIPT_URL, json={"action": "update_video", "row_index": m["row_index"], "video_url": v_link.strip()})
-                            trigger_shuttlecock_effect()
-                            st.toast("Đã lưu video thành công!", icon="🏸")
-                            time.sleep(1.5)
-                            st.cache_data.clear()
-                            st.rerun()
+                            payload = {
+                                "action": "update_video",
+                                "row_index": m["row_index"],
+                                "video_url": v_link.strip(),
+                            }
+                            if post_script(payload, match_context=m):
+                                finish_write("Đã lưu video thành công!")
             st.write("")
         for match_date in grouped_dates:
             group = df_filtered[df_filtered["date"] == match_date]
@@ -966,11 +1118,16 @@ elif menu == "🔍 Tìm kiếm thành viên":
     else:
         selected_member = st.selectbox("🔎 Chọn VĐV:", members_list)
         user_matches = []
-        if not matches_df.empty:
-            for idx, row in matches_df.iterrows():
-                m = parse_match_row(row)
-                if selected_member in [m["p1_1"], m["p1_2"], m["p2_1"], m["p2_2"]]:
-                    user_matches.append(m)
+        if not matches_parsed_df.empty:
+            member_mask = (
+                matches_parsed_df["p1_1"].eq(selected_member)
+                | matches_parsed_df["p1_2"].eq(selected_member)
+                | matches_parsed_df["p2_1"].eq(selected_member)
+                | matches_parsed_df["p2_2"].eq(selected_member)
+            )
+            user_matches = [
+                row for _, row in matches_parsed_df[member_mask].iterrows()
+            ]
         today_str = format_date_vn(date.today())
         now = datetime.now()
         win_today = lose_today = fine_today = 0
@@ -1071,12 +1228,8 @@ elif menu == "⚙️ Quản lý thành viên":
                 st.error("VĐV này đã tồn tại!")
             else:
                 payload = {"action": "add_member", "name": name_clean}
-                requests.post(SCRIPT_URL, json=payload)
-                trigger_shuttlecock_effect()
-                st.toast(f"Đã thêm VĐV **{name_clean}** thành công!", icon="🏸")
-                time.sleep(1.5)
-                st.cache_data.clear()
-                st.rerun()
+                if post_script(payload):
+                    finish_write(f"Đã thêm VĐV **{name_clean}** thành công!")
     st.markdown("---")
     st.markdown("### 📋 Danh Sách VĐV")
     if not members_list:
@@ -1104,16 +1257,14 @@ elif menu == "⚙️ Quản lý thành viên":
                                     "old_name": member,
                                     "new_name": u_name_clean
                                 }
-                                requests.post(SCRIPT_URL, json=payload)
-                                trigger_shuttlecock_effect()
-                                st.toast(f"Đã cập nhật tên thành **{u_name_clean}**!", icon="🏸")
-                                time.sleep(1.5)
-                                st.cache_data.clear()
-                                st.rerun()
+                                if post_script(payload):
+                                    finish_write(f"Đã cập nhật tên thành **{u_name_clean}**!")
             with c_del:
                 if st.button("🗑️", key=f"del_mem_{idx}", use_container_width=True):
                     payload = {"action": "delete_member", "name": member}
-                    requests.post(SCRIPT_URL, json=payload)
-                    st.toast(f"Đã xóa **{member}**!", icon="🗑️")
-                    st.cache_data.clear()
-                    st.rerun() 
+                    if post_script(payload):
+                        finish_write(
+                            f"Đã xóa **{member}**!",
+                            icon="🗑️",
+                            effect=False,
+                        )

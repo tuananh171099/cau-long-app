@@ -284,6 +284,64 @@ div[data-baseweb="select"] > div,
         font-size: 0.78rem;
     }
 }
+
+
+/* Overlay giữa màn hình khi đang xử lý / thành công */
+.center-status-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+.center-status-box {
+    min-width: 180px;
+    max-width: calc(100vw - 48px);
+    padding: 18px 24px;
+    background: rgba(255,255,255,0.98);
+    border: 1px solid #e6e6e6;
+    border-radius: 16px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.14);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+}
+.center-status-icon {
+    font-size: 2.0rem;
+    line-height: 1;
+}
+.center-status-text {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #252525;
+    line-height: 1.25;
+}
+.center-status-subtext {
+    font-size: 0.78rem;
+    color: #777;
+    line-height: 1.2;
+}
+.center-status-spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #e9ecef;
+    border-top-color: #2b8a3e;
+    border-radius: 50%;
+    animation: centerStatusSpin 0.7s linear infinite;
+}
+@keyframes centerStatusSpin {
+    to { transform: rotate(360deg); }
+}
+.center-status-success {
+    color: #2b8a3e;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -324,6 +382,38 @@ def get_http_session():
 def get_write_lock():
     """Tuần tự hóa thao tác ghi trong cùng tiến trình Streamlit."""
     return threading.Lock()
+
+def show_wait_overlay(message="Đợi chút..."):
+    """Hiện lớp chờ cố định giữa màn hình và trả về placeholder để có thể xóa."""
+    holder = st.empty()
+    holder.markdown(
+        f'''<div class="center-status-overlay">
+                <div class="center-status-box">
+                    <div class="center-status-icon">🏸</div>
+                    <div class="center-status-spinner"></div>
+                    <div class="center-status-text">{message}</div>
+                </div>
+            </div>''',
+        unsafe_allow_html=True,
+    )
+    return holder
+
+def show_success_overlay(message="Thành công!", seconds=1.0):
+    """Hiện thông báo thành công ở giữa màn hình rồi tự biến mất."""
+    holder = st.empty()
+    holder.markdown(
+        f'''<div class="center-status-overlay">
+                <div class="center-status-box">
+                    <div class="center-status-icon">✅</div>
+                    <div class="center-status-text center-status-success">{message}</div>
+                    <div class="center-status-subtext">Đã cập nhật dữ liệu</div>
+                </div>
+            </div>''',
+        unsafe_allow_html=True,
+    )
+    time.sleep(seconds)
+    holder.empty()
+
 def trigger_shuttlecock_effect():
     st.markdown(
         """
@@ -405,10 +495,12 @@ def load_data():
 def post_script(payload, match_context=None):
     """
     Gửi một thao tác ghi an toàn.
+    - Hiện "🏸 Đợi chút..." ở giữa màn hình trong lúc ghi.
     - Có timeout để request không treo vô hạn.
     - Không retry POST để tránh ghi trùng.
     - Với sửa/xóa/video trận đấu, kiểm tra lại row_index ngay trước khi ghi.
     """
+    wait_holder = show_wait_overlay("Đợi chút...")
     try:
         with get_write_lock():
             payload_to_send = dict(payload)
@@ -416,6 +508,7 @@ def post_script(payload, match_context=None):
             if match_context is not None and "row_index" in payload_to_send:
                 resolved_row = resolve_match_row_index(match_context)
                 if resolved_row is None:
+                    wait_holder.empty()
                     st.warning(
                         "⚠️ Danh sách trận vừa thay đổi bởi người khác. "
                         "Mình đã chặn thao tác để tránh sửa/xóa nhầm trận. "
@@ -431,8 +524,10 @@ def post_script(payload, match_context=None):
                 timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
             )
             response.raise_for_status()
+        wait_holder.empty()
         return True
     except requests.RequestException as exc:
+        wait_holder.empty()
         st.error(
             "❌ Không thể ghi dữ liệu lúc này. Vui lòng thử lại sau vài giây. "
             f"({type(exc).__name__})"
@@ -440,11 +535,11 @@ def post_script(payload, match_context=None):
         return False
 
 def finish_write(success_message, icon="🏸", effect=True):
-    """Chỉ xóa cache dữ liệu, không xóa toàn bộ cache/resource của app."""
+    """Xóa cache, hiện thành công ở giữa màn hình rồi rerun."""
     load_data.clear()
     if effect:
         trigger_shuttlecock_effect()
-    st.toast(success_message, icon=icon)
+    show_success_overlay(success_message, seconds=1.0)
     st.rerun()
 
 members_list, matches_df, seasons_df = load_data()
@@ -630,9 +725,21 @@ with st.sidebar:
             "🔍 Tìm kiếm thành viên",
             "⚙️ Quản lý thành viên",
         ],
+        key="main_menu",
     )
     st.markdown("---")
     st.caption("✨ **Created by NTA**")
+
+# Khi đổi mục trong menu: hiện thông báo chờ ở giữa màn hình.
+_prev_menu = st.session_state.get("_previous_main_menu")
+if _prev_menu is None:
+    st.session_state["_previous_main_menu"] = menu
+elif _prev_menu != menu:
+    _nav_wait = show_wait_overlay("Đợi chút...")
+    time.sleep(0.35)
+    _nav_wait.empty()
+    st.session_state["_previous_main_menu"] = menu
+
 # ==========================================
 # 1. BẢNG XẾP HẠNG
 # ==========================================

@@ -911,12 +911,12 @@ if page == "home":
         f"""
         <div class="hero">
           <div class="hero-copy">
-            <div class="hero-kicker">Câu lạc bộ cầu lông HV</div>
-            <h1>HV BADMINTON</h1>
-            <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên trong một giao diện gọn, nhanh và tối ưu cho cả điện thoại.</div>
+            <div class="hero-kicker">CLB Cầu Lông HV BADMINTON</div>
+            <h1>Bảng Xếp Hạng</h1>
+            <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
             <div class="hero-stats">
               <div><div class="hero-stat-label">Thành viên</div><div class="hero-stat-value">{len(members_list)}</div></div>
-              <div><div class="hero-stat-label">Trận đã ghi</div><div class="hero-stat-value">{total_matches}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
+              <div><div class="hero-stat-label">Trận</div><div class="hero-stat-value">{total_matches}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
               <div><div class="hero-stat-label">Dẫn đầu</div><div class="hero-stat-value">{leader_wins}</div><div class="hero-stat-note">{html.escape(str(leader))}</div></div>
             </div>
           </div>

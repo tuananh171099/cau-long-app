@@ -1105,6 +1105,62 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer
     unsafe_allow_html=True,
 )
 
+# V8.19 - Mobile hero compact: chữ nhỏ gọn, bỏ số thành viên, hiển thị trọn ảnh CLB
+st.markdown(
+    f"""
+<style>
+@media(max-width:768px){{
+  .hero{{
+    position:relative!important;
+    display:block!important;
+    width:100%!important;
+    min-height:0!important;
+    aspect-ratio:4 / 3!important;
+    overflow:hidden!important;
+    background-image:
+      linear-gradient(90deg, rgba(3,52,42,.88) 0%, rgba(3,52,42,.68) 42%, rgba(3,52,42,.26) 68%, rgba(3,52,42,.04) 100%),
+      linear-gradient(0deg, rgba(3,52,42,.38) 0%, rgba(3,52,42,.06) 56%, rgba(3,52,42,0) 100%),
+      url('{CLUB_HERO_DATA_URI}')!important;
+    background-size:cover!important;
+    background-position:center center!important;
+    background-repeat:no-repeat!important;
+  }}
+  .hero-copy{{
+    position:absolute!important;
+    left:20px!important;
+    bottom:22px!important;
+    width:62%!important;
+    max-width:240px!important;
+    padding:0!important;
+    display:block!important;
+    background:transparent!important;
+    text-shadow:0 2px 4px rgba(0,0,0,.34)!important;
+  }}
+  .hero-kicker{{font-size:.60rem!important;line-height:1.25!important;margin:0 0 7px!important;}}
+  .hero h1{{font-size:1.42rem!important;line-height:1.08!important;margin:0 0 9px!important;letter-spacing:-.02em!important;}}
+  .hero-desc{{font-size:.63rem!important;line-height:1.4!important;margin:0 0 11px!important;max-width:100%!important;}}
+  .hero-stats{{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:16px!important;
+    width:100%!important;
+    align-items:end!important;
+  }}
+  .hero-stat-label{{font-size:.57rem!important;margin-bottom:1px!important;}}
+  .hero-stat-value{{font-size:1.62rem!important;line-height:1!important;}}
+  .hero-stat-note{{font-size:.53rem!important;margin-top:5px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}}
+}}
+@media(max-width:390px){{
+  .hero-copy{{left:16px!important;bottom:18px!important;width:64%!important;max-width:220px!important;}}
+  .hero h1{{font-size:1.30rem!important;}}
+  .hero-desc{{font-size:.59rem!important;}}
+  .hero-stat-value{{font-size:1.48rem!important;}}
+}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 # =========================================================
 # TRANG CHỦ
 # =========================================================
@@ -1123,7 +1179,6 @@ if page == "home":
             <h1>Bảng Xếp Hạng</h1>
             <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
             <div class="hero-stats">
-              <div><div class="hero-stat-label">Thành viên</div><div class="hero-stat-value">{len(members_list)}</div></div>
               <div><div class="hero-stat-label">Trận</div><div class="hero-stat-value">{total_matches}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
               <div><div class="hero-stat-label">Dẫn đầu</div><div class="hero-stat-value">{leader_wins}</div><div class="hero-stat-note">{html.escape(str(leader))}</div></div>
             </div>

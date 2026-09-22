@@ -192,9 +192,8 @@ html,body,[data-testid="stAppViewContainer"],.main{
 
 /* Member cards */
 .member-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-top:1.35rem;}
-.member-card{border:1px solid var(--line);border-radius:13px;min-height:170px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#fff;}
-.member-card .avatar{margin-bottom:12px;}
-.member-name{font-weight:800;font-size:.9rem;margin-bottom:9px;}
+.member-card{border:1px solid var(--line);border-radius:13px;min-height:115px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#fff;}
+.member-name{font-weight:800;font-size:.95rem;margin-bottom:10px;}
 .member-stat{font-size:.75rem;color:var(--muted);display:flex;gap:7px;align-items:center;}
 .member-tag{padding:3px 9px;border-radius:6px;background:#e6edf8;color:#21467a;font-weight:800;}
 
@@ -228,7 +227,7 @@ div[data-baseweb="select"]>div,.stDateInput>div>div,.stTextInput input,.stNumber
   .quick-grid{grid-template-columns:1fr;gap:8px}.quick-card{padding:14px 15px}
   .match-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.match-card-head{padding:0 7px}.match-chip,.match-bet{font-size:.55rem;padding:3px 6px}.team-line{grid-template-columns:1fr 30px;padding:8px 8px;min-height:53px}.team-names{font-size:.66rem}.team-score{font-size:1rem}.k-val{font-size:.58rem;margin-left:2px}
   .podium{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.podium-card{padding:18px 7px 14px;min-height:170px}.place-badge{top:8px;left:8px;width:23px;height:23px;font-size:.65rem}.avatar{width:44px;height:44px;border-radius:13px;font-size:1rem}.podium-name{font-size:.74rem}.podium-meta{font-size:.58rem}.podium-value{font-size:1.3rem}.rank-tabs{overflow-x:auto;grid-template-columns:repeat(4,minmax(105px,1fr));}.rank-tab{font-size:.66rem}
-  .member-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.member-card{min-height:145px;padding:16px 7px}.member-name{font-size:.78rem}.member-stat{font-size:.62rem}
+  .member-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.member-card{min-height:95px;padding:14px 7px}.member-name{font-size:.82rem}.member-stat{font-size:.62rem}
   div[data-testid="stHorizontalBlock"]{flex-direction:row!important;flex-wrap:nowrap!important;gap:.45rem!important}div[data-testid="stHorizontalBlock"]>div[data-testid="stColumn"]{min-width:0!important}
   div[data-baseweb="select"]>div,.stDateInput>div>div,.stTextInput input,.stNumberInput div[data-baseweb="input"]{min-height:37px!important;font-size:.76rem!important}.stButton button,.stFormSubmitButton button,.stPopover button{min-height:36px!important;font-size:.72rem!important;padding:0 .55rem!important}
 }
@@ -784,7 +783,6 @@ def render_member_cards(lb_all):
         win_pct = float(s["% Thắng"]) if s is not None else 0
         cards.append(
             '<div class="member-card">'
-            f'<div class="avatar {avatar_class(i+1)}">{html.escape(initials(member))}</div>'
             f'<div class="member-name">{html.escape(member)}</div>'
             f'<div class="member-stat"><span class="member-tag">{total} trận</span><span>{win_pct:.0f}% thắng</span></div>'
             '</div>'

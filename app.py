@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from io import StringIO
 import threading
+import time
 
 import pandas as pd
 import requests
@@ -294,12 +295,32 @@ div[data-baseweb="select"] > div,
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.62);
+    background: rgba(255, 255, 255, 0.58);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
 }
+
+/*
+Chỉ hiện trạng thái chờ nếu thao tác thực sự lâu.
+Nếu request hoàn tất trước 0.8 giây, placeholder bị xóa trước khi animation bắt đầu,
+người dùng sẽ không thấy hộp "Đợi chút..." nháy lên.
+*/
+.center-status-overlay.wait-delayed {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    animation: showWaitDelayed 0s linear 0.8s forwards;
+}
+@keyframes showWaitDelayed {
+    to {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+}
+
 .center-status-box {
-    min-width: 180px;
+    min-width: 170px;
     max-width: calc(100vw - 48px);
     padding: 18px 24px;
     background: rgba(255,255,255,0.98);
@@ -314,7 +335,7 @@ div[data-baseweb="select"] > div,
     text-align: center;
 }
 .center-status-icon {
-    font-size: 2.0rem;
+    font-size: 2rem;
     line-height: 1;
 }
 .center-status-text {
@@ -327,17 +348,6 @@ div[data-baseweb="select"] > div,
     font-size: 0.78rem;
     color: #777;
     line-height: 1.2;
-}
-.center-status-spinner {
-    width: 22px;
-    height: 22px;
-    border: 3px solid #e9ecef;
-    border-top-color: #2b8a3e;
-    border-radius: 50%;
-    animation: centerStatusSpin 0.7s linear infinite;
-}
-@keyframes centerStatusSpin {
-    to { transform: rotate(360deg); }
 }
 .center-status-success {
     color: #2b8a3e;
@@ -384,13 +394,15 @@ def get_write_lock():
     return threading.Lock()
 
 def show_wait_overlay(message="Đợi chút..."):
-    """Hiện lớp chờ cố định giữa màn hình và trả về placeholder để có thể xóa."""
+    """
+    Tạo lớp chờ giữa màn hình nhưng CSS trì hoãn 0.8 giây mới hiện.
+    Vì vậy thao tác nhanh sẽ không làm giao diện nháy loading.
+    """
     holder = st.empty()
     holder.markdown(
-        f'''<div class="center-status-overlay">
+        f'''<div class="center-status-overlay wait-delayed">
                 <div class="center-status-box">
                     <div class="center-status-icon">🏸</div>
-                    <div class="center-status-spinner"></div>
                     <div class="center-status-text">{message}</div>
                 </div>
             </div>''',
@@ -730,15 +742,9 @@ with st.sidebar:
     st.markdown("---")
     st.caption("✨ **Created by NTA**")
 
-# Khi đổi mục trong menu: hiện thông báo chờ ở giữa màn hình.
-_prev_menu = st.session_state.get("_previous_main_menu")
-if _prev_menu is None:
-    st.session_state["_previous_main_menu"] = menu
-elif _prev_menu != menu:
-    _nav_wait = show_wait_overlay("Đợi chút...")
-    time.sleep(0.35)
-    _nav_wait.empty()
-    st.session_state["_previous_main_menu"] = menu
+# Đổi mục menu thường rất nhanh nên không bật overlay chờ.
+# Chỉ cập nhật trạng thái mục hiện tại.
+st.session_state["_previous_main_menu"] = menu
 
 # ==========================================
 # 1. BẢNG XẾP HẠNG

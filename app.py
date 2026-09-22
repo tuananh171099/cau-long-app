@@ -466,8 +466,8 @@ def fetch_sheet_uncached(sheet_name):
 
 @st.cache_data(ttl=DATA_CACHE_TTL, max_entries=1, show_spinner=False)
 def load_data():
-    # Đọc 3 sheet song song để lần nạp dữ liệu đầu nhanh hơn,
-    # nhưng vẫn giữ nguyên cấu trúc dữ liệu/giao diện cũ.
+    # Tối ưu nền: đọc Members / Matches / Seasons song song.
+    # Không thay đổi bất kỳ bố cục hay giao diện V8.10 nào.
     results = {}
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = {
@@ -869,225 +869,48 @@ def render_member_cards(lb_all):
 
 
 # =========================================================
-# NAVIGATION NHANH - GIỮ PHONG CÁCH CŨ NHƯNG KHÔNG RELOAD TRANG
+# NAVIGATION BẰNG QUERY PARAM - GIỮ ĐÚNG 1 APP STREAMLIT
 # =========================================================
+page = st.query_params.get("page", "home")
+if isinstance(page, list):
+    page = page[0]
 allowed = {"home", "ranking", "matches", "members", "admin"}
-
-if "_page" not in st.session_state:
-    initial_page = st.query_params.get("page", "home")
-    if isinstance(initial_page, list):
-        initial_page = initial_page[0]
-    st.session_state["_page"] = initial_page if initial_page in allowed else "home"
-
-
-def navigate_to(target):
-    if target not in allowed:
-        target = "home"
-    st.session_state["_page"] = target
-    st.session_state["_nav_loading"] = True
-    # Cập nhật URL bằng API của Streamlit, không tải lại toàn bộ tài liệu HTML.
-    try:
-        st.query_params["page"] = target
-    except Exception:
-        pass
-
-
-page = st.session_state.get("_page", "home")
 if page not in allowed:
     page = "home"
-    st.session_state["_page"] = page
 
-# Navigation nội bộ nhanh nhưng giữ nguyên phong cách navbar V8.12.
-active_col = {"home": 2, "ranking": 3, "matches": 4, "members": 5, "admin": 7}.get(page, 2)
-mobile_active_col = {"home": 1, "ranking": 2, "matches": 3, "members": 4, "admin": 5}.get(page, 1)
+nav_items = [
+    ("home", "Trang chủ"),
+    ("ranking", "Bảng xếp hạng"),
+    ("matches", "Trận đấu"),
+    ("members", "Thành viên"),
+]
+nav_links = "".join(
+    f'<a class="hvb-link {"active" if page == key else ""}" target="_self" href="?page={key}">{label}</a>'
+    for key, label in nav_items
+)
+mobile_items = [
+    ("home", "🏠", "Trang chủ"),
+    ("ranking", "🏆", "BXH"),
+    ("matches", "🏸", "Trận"),
+    ("members", "👥", "VĐV"),
+    ("admin", "⚙️", "Quản lý CLB"),
+]
+mobile_links = "".join(
+    f'<a class="{"active" if page == key else ""}" target="_self" href="?page={key}"><span>{icon}</span>{label}</a>'
+    for key, icon, label in mobile_items
+)
 
 st.markdown(
     f"""
-<style>
-/* V8.14 - GIỮ NGUYÊN GIAO DIỆN CŨ, CHỈ ĐỔI CƠ CHẾ CLICK NỘI BỘ */
-.st-key-hvb_navbar{{
-  position:fixed!important;
-  top:0!important;left:0!important;right:0!important;
-  width:100vw!important;
-  z-index:99999!important;
-  background:linear-gradient(90deg,#084c3d 0%,#0b6b55 52%,#0d755d 100%)!important;
-  border-bottom:1px solid rgba(255,255,255,.08)!important;
-  box-shadow:0 10px 28px rgba(5,45,37,.18)!important;
-}}
-.st-key-hvb_navbar_inner{{
-  max-width:1160px!important;
-  margin:0 auto!important;
-  padding:0 1.25rem!important;
-}}
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"]{{
-  min-height:70px!important;
-  align-items:center!important;
-  gap:.18rem!important;
-}}
-.st-key-hvb_navbar_inner [data-testid="stColumn"]{{
-  min-width:0!important;
-  display:flex!important;
-  align-items:center!important;
-}}
-.st-key-hvb_navbar_inner .stButton{{
-  width:100%!important;
-  display:flex!important;
-  justify-content:center!important;
-}}
-.st-key-hvb_navbar_inner .stButton button{{
-  width:auto!important;
-  min-width:0!important;
-  min-height:40px!important;
-  height:40px!important;
-  border:0!important;
-  outline:0!important;
-  background:transparent!important;
-  color:rgba(255,255,255,.86)!important;
-  border-radius:999px!important;
-  padding:0 14px!important;
-  font-size:.88rem!important;
-  font-weight:650!important;
-  line-height:1!important;
-  white-space:nowrap!important;
-  box-shadow:none!important;
-}}
-.st-key-hvb_navbar_inner .stButton button:hover{{
-  background:rgba(255,255,255,.10)!important;
-  color:#fff!important;
-}}
-/* Mục đang chọn - giống pill của giao diện cũ */
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child({active_col}) .stButton button{{
-  background:rgba(255,255,255,.15)!important;
-  color:#fff!important;
-  font-weight:800!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)!important;
-}}
-/* Nút Quản lý CLB - luôn giữ màu kem như giao diện cũ */
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) .stButton button{{
-  background:#f5f0e6!important;
-  color:#0c5a48!important;
-  padding:0 18px!important;
-  font-weight:800!important;
-  box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
-}}
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) .stButton button:hover{{
-  background:#fff7ea!important;
-  color:#084c3d!important;
-}}
-.hvb-brand-static{{
-  display:flex!important;
-  align-items:center!important;
-  gap:12px!important;
-  min-height:70px!important;
-  color:#fff!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-}}
-.hvb-brand-static .hvb-logo{{
-  width:34px!important;height:34px!important;
-  border-radius:7px!important;
-  background:rgba(255,255,255,.16)!important;
-  color:#fff!important;
-  border:1px solid rgba(255,255,255,.18)!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  font-size:.73rem!important;font-weight:900!important;
-}}
-.hvb-brand-static .brand-name{{font-size:1rem!important;letter-spacing:.01em!important;}}
-
-/* Loading chỉ hiện khi rerun kéo dài hơn 0.45s */
-.nav-wait-overlay{{
-  position:fixed;inset:0;z-index:2147483000;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.48);backdrop-filter:blur(2px);
-  opacity:0;visibility:hidden;pointer-events:none;
-  animation:navWaitShow 0s linear .45s forwards;
-}}
-@keyframes navWaitShow{{to{{opacity:1;visibility:visible;pointer-events:auto;}}}}
-.nav-wait-box{{
-  min-width:170px;padding:18px 24px;background:#fff;
-  border:1px solid #e3e8e6;border-radius:15px;
-  box-shadow:0 16px 40px rgba(17,24,39,.16);
-  text-align:center;color:#173e35;font-weight:800;font-size:.96rem;
-}}
-.nav-wait-icon{{font-size:1.65rem;margin-bottom:5px;}}
-.nav-dots::after{{content:".";animation:navDots 1.05s steps(1,end) infinite;}}
-@keyframes navDots{{
-  0%,32%{{content:".";}}
-  33%,65%{{content:"..";}}
-  66%,100%{{content:"...";}}
-}}
-
-/* Mobile: giữ bottom navigation cũ */
-.st-key-hvb_mobilebar{{display:none!important;}}
-@media(max-width:768px){{
-  .main .block-container{{padding-top:64px!important;padding-bottom:5.4rem!important;}}
-  .st-key-hvb_navbar_inner{{padding:0 .82rem!important;}}
-  .st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"]{{min-height:58px!important;}}
-  .st-key-hvb_navbar_inner [data-testid="stColumn"]:not(:first-child){{display:none!important;}}
-  .hvb-brand-static{{min-height:58px!important;}}
-  .hvb-brand-static .brand-name{{font-size:.9rem!important;}}
-
-  .st-key-hvb_mobilebar{{
-    display:block!important;
-    position:fixed!important;z-index:99999!important;
-    bottom:0!important;left:0!important;right:0!important;
-    background:#fff!important;
-    border-top:1px solid #dce3ea!important;
-    box-shadow:0 -8px 24px rgba(17,24,39,.06)!important;
-    padding:5px 5px max(5px,env(safe-area-inset-bottom))!important;
-  }}
-  .st-key-hvb_mobilebar [data-testid="stHorizontalBlock"]{{gap:2px!important;}}
-  .st-key-hvb_mobilebar .stButton button{{
-    border:0!important;box-shadow:none!important;background:transparent!important;
-    width:100%!important;min-height:48px!important;height:48px!important;
-    border-radius:8px!important;padding:2px 3px!important;
-    font-size:.62rem!important;color:#6f7b89!important;
-  }}
-  .st-key-hvb_mobilebar [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child({mobile_active_col}) .stButton button{{
-    background:#eef3f0!important;color:#0b6b55!important;font-weight:800!important;
-  }}
-}}
-</style>
-""",
+    <div class="hvb-nav-wrap"><div class="hvb-nav">
+      <a class="hvb-brand" target="_self" href="?page=home"><span class="hvb-logo">HVB</span><span class="hvb-brand-name">HV BADMINTON</span></a>
+      <div class="hvb-links">{nav_links}</div>
+      <a class="hvb-admin" target="_self" href="?page=admin">Quản lý CLB</a>
+    </div></div>
+    <div class="hvb-mobile-nav">{mobile_links}</div>
+    """,
     unsafe_allow_html=True,
 )
-
-with st.container(key="hvb_navbar"):
-    with st.container(key="hvb_navbar_inner"):
-        nav_cols = st.columns([2.8, 1.00, 1.38, .95, 1.08, .50, 1.42])
-        with nav_cols[0]:
-            st.markdown('<div class="hvb-brand-static"><span class="hvb-logo">HVB</span><span class="brand-name">HV BADMINTON</span></div>', unsafe_allow_html=True)
-        with nav_cols[1]:
-            st.button("Trang chủ", key="nav_home", use_container_width=True, on_click=navigate_to, args=("home",))
-        with nav_cols[2]:
-            st.button("Bảng xếp hạng", key="nav_ranking", use_container_width=True, on_click=navigate_to, args=("ranking",))
-        with nav_cols[3]:
-            st.button("Trận đấu", key="nav_matches", use_container_width=True, on_click=navigate_to, args=("matches",))
-        with nav_cols[4]:
-            st.button("Thành viên", key="nav_members", use_container_width=True, on_click=navigate_to, args=("members",))
-        with nav_cols[6]:
-            st.button("Quản lý CLB", key="nav_admin", use_container_width=True, on_click=navigate_to, args=("admin",))
-
-with st.container(key="hvb_mobilebar"):
-    mc = st.columns(5)
-    mobile_nav = [
-        ("home", "🏠 Trang", "mnav_home"),
-        ("ranking", "🏆 BXH", "mnav_ranking"),
-        ("matches", "🏸 Trận", "mnav_matches"),
-        ("members", "👥 VĐV", "mnav_members"),
-        ("admin", "⚙️ Quản lý", "mnav_admin"),
-    ]
-    for col, (target, label, key) in zip(mc, mobile_nav):
-        with col:
-            st.button(label, key=key, use_container_width=True, on_click=navigate_to, args=(target,))
-
-# Placeholder loading được gửi xuống trình duyệt trước phần nội dung nặng.
-nav_wait_slot = st.empty()
-if st.session_state.get("_nav_loading", False):
-    nav_wait_slot.markdown(
-        '<div class="nav-wait-overlay"><div class="nav-wait-box"><div class="nav-wait-icon">🏸</div><div>Đợi chút<span class="nav-dots"></span></div></div></div>',
-        unsafe_allow_html=True,
-    )
 
 render_queued_success()
 
@@ -1153,175 +976,6 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer
 }
 </style>
 """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-<style>
-/* V8.15 - KHÓA NAVBAR ĐÚNG GIAO DIỆN MẪU, GIỮ INTERNAL NAV NHANH */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] .main{
-  margin:0!important;
-  padding:0!important;
-}
-[data-testid="stHeader"], header[data-testid="stHeader"]{
-  display:none!important;
-  height:0!important;
-  min-height:0!important;
-}
-.main .block-container{
-  max-width:1120px!important;
-  padding-top:84px!important;
-  margin:0 auto!important;
-}
-
-/* Thanh xanh đúng mẫu */
-.st-key-hvb_navbar{
-  position:fixed!important;
-  top:0!important;
-  left:0!important;
-  right:0!important;
-  width:100vw!important;
-  height:70px!important;
-  min-height:70px!important;
-  z-index:999999!important;
-  background:#0b6d57!important;
-  border:0!important;
-  border-bottom:1px solid rgba(255,255,255,.08)!important;
-  box-shadow:0 7px 18px rgba(5,55,44,.12)!important;
-  margin:0!important;
-  padding:0!important;
-}
-.st-key-hvb_navbar_inner{
-  width:100%!important;
-  max-width:1120px!important;
-  height:70px!important;
-  min-height:70px!important;
-  margin:0 auto!important;
-  padding:0 10px!important;
-  box-sizing:border-box!important;
-}
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"]{
-  height:70px!important;
-  min-height:70px!important;
-  margin:0!important;
-  padding:0!important;
-  align-items:center!important;
-  gap:0!important;
-}
-.st-key-hvb_navbar_inner [data-testid="stColumn"]{
-  min-width:0!important;
-  height:70px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  padding:0!important;
-}
-
-/* Logo + tên CLB */
-.hvb-brand-static{
-  width:100%!important;
-  min-height:70px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
-  gap:11px!important;
-  color:#fff!important;
-  font-weight:850!important;
-  white-space:nowrap!important;
-  padding:0!important;
-}
-.hvb-brand-static .hvb-logo{
-  width:34px!important;
-  height:34px!important;
-  border-radius:7px!important;
-  background:rgba(255,255,255,.14)!important;
-  color:#fff!important;
-  border:1px solid rgba(255,255,255,.20)!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  font-size:.72rem!important;
-  font-weight:900!important;
-  box-shadow:none!important;
-}
-.hvb-brand-static .brand-name{
-  font-size:.96rem!important;
-  font-weight:850!important;
-  letter-spacing:0!important;
-}
-
-/* Nút menu: chữ thường, active dạng pill đúng mẫu */
-.st-key-hvb_navbar_inner .stButton{
-  width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-}
-.st-key-hvb_navbar_inner .stButton > button,
-.st-key-hvb_navbar_inner .stButton button{
-  width:auto!important;
-  min-width:0!important;
-  height:40px!important;
-  min-height:40px!important;
-  margin:0!important;
-  padding:0 15px!important;
-  border:0!important;
-  outline:0!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  color:rgba(255,255,255,.93)!important;
-  box-shadow:none!important;
-  font-size:.86rem!important;
-  font-weight:600!important;
-  line-height:1!important;
-  white-space:nowrap!important;
-}
-.st-key-hvb_navbar_inner .stButton button:hover{
-  background:rgba(255,255,255,.08)!important;
-  color:#fff!important;
-}
-
-/* Active pill */
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(ACTIVE_COL) .stButton button{
-  background:#347f70!important;
-  color:#fff!important;
-  font-weight:800!important;
-  border:1px solid rgba(255,255,255,.12)!important;
-  box-shadow:none!important;
-}
-
-/* Quản lý CLB màu kem */
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) .stButton button{
-  background:#fff8e9!important;
-  color:#075343!important;
-  height:42px!important;
-  min-height:42px!important;
-  padding:0 20px!important;
-  font-weight:850!important;
-  border:0!important;
-  box-shadow:none!important;
-}
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) .stButton button:hover{
-  background:#fff!important;
-  color:#06493b!important;
-}
-
-/* Mobile: giữ bottom nav; header chỉ hiện thương hiệu */
-@media(max-width:768px){
-  .main .block-container{padding-top:66px!important;padding-bottom:5.4rem!important;}
-  .st-key-hvb_navbar{height:58px!important;min-height:58px!important;}
-  .st-key-hvb_navbar_inner{height:58px!important;min-height:58px!important;padding:0 .75rem!important;}
-  .st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"]{height:58px!important;min-height:58px!important;}
-  .st-key-hvb_navbar_inner [data-testid="stColumn"]{height:58px!important;}
-  .st-key-hvb_navbar_inner [data-testid="stColumn"]:not(:first-child){display:none!important;}
-  .hvb-brand-static{min-height:58px!important;}
-  .hvb-brand-static .brand-name{font-size:.88rem!important;}
-}
-</style>
-""".replace("ACTIVE_COL", str(active_col)),
     unsafe_allow_html=True,
 )
 
@@ -1634,9 +1288,3 @@ elif page == "admin":
                 if st.button("🗑️ Xóa VĐV", use_container_width=True):
                     if post_script({"action": "delete_member", "name": chosen_member}):
                         finish_write(f"Đã xóa {chosen_member}!")
-
-
-# Kết thúc render trang: đóng overlay chuyển mục.
-if st.session_state.get("_nav_loading", False):
-    nav_wait_slot.empty()
-    st.session_state["_nav_loading"] = False

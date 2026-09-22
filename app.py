@@ -1096,7 +1096,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer
 }
 .hvb-admin:hover{background:#fff7ea!important;}
 @media(max-width:768px){
-  .main .block-container{padding-top:64px!important;padding-bottom:5.4rem!important;}
+  .main .block-container{padding-top:50px!important;padding-bottom:5.4rem!important;}
   .hvb-nav{min-height:58px!important;padding:0 .82rem!important;}
   .hvb-brand-name{font-size:.9rem!important;}
 }
@@ -1117,9 +1117,10 @@ st.markdown(
     min-height:0!important;
     aspect-ratio:4 / 3!important;
     overflow:hidden!important;
+    margin-top:0!important;
     background-image:
-      linear-gradient(90deg, rgba(3,52,42,.72) 0%, rgba(3,52,42,.44) 34%, rgba(3,52,42,.18) 60%, rgba(3,52,42,.02) 100%),
-      linear-gradient(0deg, rgba(3,52,42,.22) 0%, rgba(3,52,42,.04) 54%, rgba(3,52,42,0) 100%),
+      linear-gradient(90deg, rgba(3,52,42,.58) 0%, rgba(3,52,42,.34) 28%, rgba(3,52,42,.12) 54%, rgba(3,52,42,.01) 100%),
+      linear-gradient(0deg, rgba(3,52,42,.16) 0%, rgba(3,52,42,.02) 54%, rgba(3,52,42,0) 100%),
       url('{CLUB_HERO_DATA_URI}')!important;
     background-size:cover!important;
     background-position:center center!important;
@@ -1127,7 +1128,7 @@ st.markdown(
   }}
   .hero-copy{{
     position:absolute!important;
-    inset:18px 16px 18px 16px!important;
+    inset:12px 16px 14px 16px!important;
     width:auto!important;
     max-width:none!important;
     padding:0!important;
@@ -1135,13 +1136,13 @@ st.markdown(
     flex-direction:column!important;
     justify-content:space-between!important;
     background:transparent!important;
-    text-shadow:0 2px 4px rgba(0,0,0,.26)!important;
+    text-shadow:0 2px 4px rgba(0,0,0,.18)!important;
   }}
-  .hero-top{{max-width:52%!important;}}
-  .hero-kicker{{font-size:.62rem!important;line-height:1.15!important;margin:0 0 4px!important;}}
-  .hero h1{{font-size:1.36rem!important;line-height:1.04!important;margin:0!important;letter-spacing:-.02em!important;}}
-  .hero-bottom{{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:12px!important;}}
-  .hero-desc{{font-size:.62rem!important;line-height:1.28!important;margin:0 0 3px!important;max-width:none!important;flex:1 1 auto!important;text-align:left!important;}}
+  .hero-top{{max-width:70%!important;}}
+  .hero-kicker{{font-size:.66rem!important;line-height:1.1!important;margin:0!important;}}
+  .hero h1{{display:none!important;}}
+  .hero-bottom{{display:flex!important;align-items:flex-end!important;justify-content:flex-start!important;gap:12px!important;}}
+  .hero-desc{{display:none!important;}}
   .hero-stats{{
     display:grid!important;
     grid-template-columns:repeat(2,max-content)!important;
@@ -1155,11 +1156,9 @@ st.markdown(
   .hero-stat-note{{font-size:.52rem!important;margin-top:4px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}}
 }}
 @media(max-width:390px){{
-  .hero-copy{{inset:16px 14px 16px 14px!important;}}
-  .hero-top{{max-width:56%!important;}}
-  .hero h1{{font-size:1.26rem!important;}}
-  .hero-kicker{{font-size:.58rem!important;}}
-  .hero-desc{{font-size:.58rem!important;line-height:1.24!important;}}
+  .hero-copy{{inset:10px 14px 12px 14px!important;}}
+  .hero-top{{max-width:76%!important;}}
+  .hero-kicker{{font-size:.62rem!important;}}
   .hero-stat-value{{font-size:1.38rem!important;}}
   .hero-stats{{gap:8px!important;}}
 }}

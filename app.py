@@ -352,6 +352,16 @@ người dùng sẽ không thấy hộp "Đợi chút..." nháy lên.
 .center-status-success {
     color: #2b8a3e;
 }
+
+/* Thành công render ở trang chính và tự ẩn, không khóa popover/form. */
+.center-status-overlay.success-auto-hide {
+    pointer-events: none;
+    animation: successOverlayAutoHide 1.65s ease-out forwards;
+}
+@keyframes successOverlayAutoHide {
+    0%, 72% { opacity: 1; visibility: visible; }
+    100% { opacity: 0; visibility: hidden; }
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -425,6 +435,38 @@ def show_success_overlay(message="Thành công!", seconds=1.0):
     )
     time.sleep(seconds)
     holder.empty()
+
+def queue_success_and_rerun(message="Thành công!", effect=True):
+    '''Lưu thông báo cho lượt chạy kế tiếp rồi rerun ngay.
+
+    Khi thao tác được bấm bên trong st.popover, rerun ngay giúp đóng popover
+    trước; thông báo thành công sẽ hiện ở tầng trang chính ở lượt chạy mới.
+    '''
+    st.session_state["_center_flash_success"] = message
+    st.session_state["_center_flash_effect"] = bool(effect)
+    st.rerun()
+
+
+def render_queued_success():
+    '''Hiện thông báo thành công ở tầng trang chính, ngoài popover/form.'''
+    message = st.session_state.pop("_center_flash_success", None)
+    effect = st.session_state.pop("_center_flash_effect", False)
+    if not message:
+        return
+
+    if effect:
+        trigger_shuttlecock_effect()
+
+    html = (
+        '<div class="center-status-overlay success-auto-hide">'
+        '<div class="center-status-box">'
+        '<div class="center-status-icon">✅</div>'
+        f'<div class="center-status-text center-status-success">{message}</div>'
+        '<div class="center-status-subtext">Đã cập nhật dữ liệu</div>'
+        '</div></div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
+
 
 def trigger_shuttlecock_effect():
     st.markdown(
@@ -547,12 +589,9 @@ def post_script(payload, match_context=None):
         return False
 
 def finish_write(success_message, icon="🏸", effect=True):
-    """Xóa cache, hiện thành công ở giữa màn hình rồi rerun."""
+    '''Xóa cache rồi rerun ngay để đóng popover; thành công hiện ở lượt chạy mới.'''
     load_data.clear()
-    if effect:
-        trigger_shuttlecock_effect()
-    show_success_overlay(success_message, seconds=1.0)
-    st.rerun()
+    queue_success_and_rerun(success_message, effect=effect)
 
 members_list, matches_df, seasons_df = load_data()
 def to_int(val, default=0):
@@ -745,6 +784,9 @@ with st.sidebar:
 # Đổi mục menu thường rất nhanh nên không bật overlay chờ.
 # Chỉ cập nhật trạng thái mục hiện tại.
 st.session_state["_previous_main_menu"] = menu
+
+# Thông báo của thao tác trước được render ngoài popover để luôn nhìn thấy.
+render_queued_success()
 
 # ==========================================
 # 1. BẢNG XẾP HẠNG
@@ -1117,6 +1159,28 @@ elif menu == "🛠️ Lịch sử các trận đấu":
         st.info("Chưa có trận đấu nào.")
     else:
         df_p = matches_parsed_df.copy()
+
+        # Sau khi xóa, Apps Script/Google Sheet có thể cần một nhịp ngắn để CSV mới
+        # phản ánh dữ liệu. Ẩn đúng bản ghi vừa xóa trong lượt rerun đầu tiên.
+        deleted_once = st.session_state.pop("_deleted_match_once", None)
+        if deleted_once and not df_p.empty:
+            target_row = int(deleted_once.get("row_index", -1))
+            target_identity = tuple(deleted_once.get("identity", ()))
+            target_s1 = int(deleted_once.get("score1", -9999))
+            target_s2 = int(deleted_once.get("score2", -9999))
+            drop_index = None
+            for df_idx, candidate in df_p.iterrows():
+                if (
+                    int(candidate.get("row_index", -1)) == target_row
+                    and _match_identity(candidate) == target_identity
+                    and int(candidate.get("score1", -9999)) == target_s1
+                    and int(candidate.get("score2", -9999)) == target_s2
+                ):
+                    drop_index = df_idx
+                    break
+            if drop_index is not None:
+                df_p = df_p.drop(index=drop_index).reset_index(drop=True)
+
         unique_dates = sorted(df_p["date_obj"].unique(), reverse=True)
         date_options = ["Tất cả các ngày"] + [d.strftime("%d/%m/%Y") for d in unique_dates]
         selected_history_date = st.selectbox("📅 Lọc xem theo ngày:", date_options)
@@ -1181,7 +1245,15 @@ elif menu == "🛠️ Lịch sử các trận đấu":
                     if st.button("🗑️ Xóa trận đấu này", key=f"del_m_{m['row_index']}", use_container_width=True):
                         payload = {"action": "delete_match", "row_index": m["row_index"]}
                         if post_script(payload, match_context=m):
-                            finish_write("Đã xóa trận!", icon="🗑️", effect=False)
+                            # Nếu CSV Google Sheet cập nhật chậm một nhịp, lượt rerun đầu tiên
+                            # vẫn ẩn đúng trận vừa xóa để popover không bám sang trận khác.
+                            st.session_state["_deleted_match_once"] = {
+                                "row_index": int(m["row_index"]),
+                                "identity": _match_identity(m),
+                                "score1": int(m["score1"]),
+                                "score2": int(m["score2"]),
+                            }
+                            finish_write("Đã xóa trận thành công!", icon="🗑️", effect=False)
             with c_detail:
                 with st.popover("🔍 Chi tiết & Video", use_container_width=True):
                     st.write(

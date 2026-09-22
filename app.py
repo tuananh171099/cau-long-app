@@ -306,6 +306,68 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    f"""
+<style>
+/* V8.8 - Hero ảnh CLB toàn khung + chữ trên ảnh */
+.hero{{
+  position:relative!important;
+  min-height:410px!important;
+  display:flex!important;
+  align-items:center!important;
+  overflow:hidden!important;
+  background-image:
+    linear-gradient(90deg, rgba(3,52,42,.94) 0%, rgba(3,52,42,.84) 34%, rgba(3,52,42,.58) 57%, rgba(3,52,42,.22) 78%, rgba(3,52,42,.12) 100%),
+    url('{CLUB_HERO_DATA_URI}')!important;
+  background-size:cover!important;
+  background-position:center 38%!important;
+  background-repeat:no-repeat!important;
+}}
+.hero-copy{{
+  position:relative!important;
+  z-index:2!important;
+  width:min(650px,68%)!important;
+  padding:46px 48px 42px!important;
+  background:transparent!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.18);
+}}
+.hero-art{{display:none!important;}}
+.hero h1{{font-size:2.45rem!important;}}
+.hero-desc{{max-width:570px!important;}}
+.hero-stats{{gap:52px!important;}}
+.hero-stat-value{{font-size:3.15rem!important;}}
+
+@media(max-width:768px){{
+  .hero{{
+    min-height:430px!important;
+    align-items:flex-end!important;
+    background-image:
+      linear-gradient(180deg, rgba(3,52,42,.18) 0%, rgba(3,52,42,.36) 35%, rgba(3,52,42,.90) 72%, rgba(3,52,42,.97) 100%),
+      url('{CLUB_HERO_DATA_URI}')!important;
+    background-position:center 28%!important;
+  }}
+  .hero-copy{{
+    width:100%!important;
+    padding:175px 22px 26px!important;
+  }}
+  .hero-kicker{{font-size:.72rem!important;}}
+  .hero h1{{font-size:1.85rem!important;margin-bottom:10px!important;}}
+  .hero-desc{{font-size:.78rem!important;line-height:1.5!important;margin-bottom:18px!important;max-width:100%!important;}}
+  .hero-stats{{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:10px!important;
+    width:100%!important;
+  }}
+  .hero-stat-value{{font-size:2rem!important;}}
+  .hero-stat-label{{font-size:.62rem!important;}}
+  .hero-stat-note{{font-size:.58rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}
+}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 # =========================================================
 # HTTP / CACHE / GHI DỮ LIỆU
 # =========================================================

@@ -897,11 +897,14 @@ if page not in allowed:
     page = "home"
     st.session_state["_page"] = page
 
-# CSS riêng cho navigation bằng widget Streamlit nhưng giữ đúng phong cách navbar cũ.
+# Navigation nội bộ nhanh nhưng giữ nguyên phong cách navbar V8.12.
+active_col = {"home": 2, "ranking": 3, "matches": 4, "members": 5, "admin": 7}.get(page, 2)
+mobile_active_col = {"home": 1, "ranking": 2, "matches": 3, "members": 4, "admin": 5}.get(page, 1)
+
 st.markdown(
     f"""
 <style>
-/* Thanh điều hướng nội bộ: tránh refresh trắng 2-3 giây */
+/* V8.14 - GIỮ NGUYÊN GIAO DIỆN CŨ, CHỈ ĐỔI CƠ CHẾ CLICK NỘI BỘ */
 .st-key-hvb_navbar{{
   position:fixed!important;
   top:0!important;left:0!important;right:0!important;
@@ -911,44 +914,87 @@ st.markdown(
   border-bottom:1px solid rgba(255,255,255,.08)!important;
   box-shadow:0 10px 28px rgba(5,45,37,.18)!important;
 }}
-.st-key-hvb_navbar_inner{{max-width:1160px!important;margin:0 auto!important;padding:0 1.25rem!important;}}
-.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"]{{min-height:70px!important;align-items:center!important;gap:.25rem!important;}}
-.st-key-hvb_navbar_inner [data-testid="stColumn"]{{display:flex!important;align-items:center!important;}}
-.st-key-hvb_navbar_inner .stButton{{width:100%!important;}}
-.st-key-hvb_navbar_inner .stButton button{{
+.st-key-hvb_navbar_inner{{
+  max-width:1160px!important;
+  margin:0 auto!important;
+  padding:0 1.25rem!important;
+}}
+.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"]{{
+  min-height:70px!important;
+  align-items:center!important;
+  gap:.18rem!important;
+}}
+.st-key-hvb_navbar_inner [data-testid="stColumn"]{{
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+}}
+.st-key-hvb_navbar_inner .stButton{{
   width:100%!important;
+  display:flex!important;
+  justify-content:center!important;
+}}
+.st-key-hvb_navbar_inner .stButton button{{
+  width:auto!important;
+  min-width:0!important;
   min-height:40px!important;
   height:40px!important;
   border:0!important;
-  box-shadow:none!important;
+  outline:0!important;
   background:transparent!important;
   color:rgba(255,255,255,.86)!important;
   border-radius:999px!important;
-  padding:0 11px!important;
-  font-size:.86rem!important;
+  padding:0 14px!important;
+  font-size:.88rem!important;
   font-weight:650!important;
+  line-height:1!important;
   white-space:nowrap!important;
+  box-shadow:none!important;
 }}
-.st-key-hvb_navbar_inner .stButton button:hover{{background:rgba(255,255,255,.10)!important;color:#fff!important;}}
-.st-key-nav_{page} button{{
+.st-key-hvb_navbar_inner .stButton button:hover{{
+  background:rgba(255,255,255,.10)!important;
+  color:#fff!important;
+}}
+/* Mục đang chọn - giống pill của giao diện cũ */
+.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child({active_col}) .stButton button{{
   background:rgba(255,255,255,.15)!important;
   color:#fff!important;
   font-weight:800!important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)!important;
 }}
-.st-key-nav_admin button{{
+/* Nút Quản lý CLB - luôn giữ màu kem như giao diện cũ */
+.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) .stButton button{{
   background:#f5f0e6!important;
   color:#0c5a48!important;
+  padding:0 18px!important;
   font-weight:800!important;
   box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
 }}
-.st-key-nav_admin button:hover{{background:#fff7ea!important;color:#084c3d!important;}}
-.st-key-nav_admin button:focus{{background:#fff7ea!important;color:#084c3d!important;}}
-.hvb-brand-static{{display:flex;align-items:center;gap:12px;min-height:70px;color:#fff;font-weight:800;white-space:nowrap;}}
-.hvb-brand-static .hvb-logo{{width:34px;height:34px;border-radius:7px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:.73rem;font-weight:900;}}
-.hvb-brand-static .brand-name{{font-size:1rem;letter-spacing:.01em;}}
+.st-key-hvb_navbar_inner [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(7) .stButton button:hover{{
+  background:#fff7ea!important;
+  color:#084c3d!important;
+}}
+.hvb-brand-static{{
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  min-height:70px!important;
+  color:#fff!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}}
+.hvb-brand-static .hvb-logo{{
+  width:34px!important;height:34px!important;
+  border-radius:7px!important;
+  background:rgba(255,255,255,.16)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  font-size:.73rem!important;font-weight:900!important;
+}}
+.hvb-brand-static .brand-name{{font-size:1rem!important;letter-spacing:.01em!important;}}
 
-/* Loading chỉ hiện nếu chuyển trang lâu hơn 0.45 giây */
+/* Loading chỉ hiện khi rerun kéo dài hơn 0.45s */
 .nav-wait-overlay{{
   position:fixed;inset:0;z-index:2147483000;
   display:flex;align-items:center;justify-content:center;
@@ -971,7 +1017,7 @@ st.markdown(
   66%,100%{{content:"...";}}
 }}
 
-/* Mobile: giữ thanh điều hướng dưới như trước nhưng dùng button nội bộ */
+/* Mobile: giữ bottom navigation cũ */
 .st-key-hvb_mobilebar{{display:none!important;}}
 @media(max-width:768px){{
   .main .block-container{{padding-top:64px!important;padding-bottom:5.4rem!important;}}
@@ -980,20 +1026,26 @@ st.markdown(
   .st-key-hvb_navbar_inner [data-testid="stColumn"]:not(:first-child){{display:none!important;}}
   .hvb-brand-static{{min-height:58px!important;}}
   .hvb-brand-static .brand-name{{font-size:.9rem!important;}}
+
   .st-key-hvb_mobilebar{{
-    display:block!important;position:fixed!important;z-index:99999!important;
+    display:block!important;
+    position:fixed!important;z-index:99999!important;
     bottom:0!important;left:0!important;right:0!important;
-    background:#fff!important;border-top:1px solid #dce3ea!important;
+    background:#fff!important;
+    border-top:1px solid #dce3ea!important;
     box-shadow:0 -8px 24px rgba(17,24,39,.06)!important;
     padding:5px 5px max(5px,env(safe-area-inset-bottom))!important;
   }}
   .st-key-hvb_mobilebar [data-testid="stHorizontalBlock"]{{gap:2px!important;}}
   .st-key-hvb_mobilebar .stButton button{{
     border:0!important;box-shadow:none!important;background:transparent!important;
-    min-height:48px!important;height:48px!important;border-radius:8px!important;
-    padding:2px 3px!important;font-size:.62rem!important;color:#6f7b89!important;
+    width:100%!important;min-height:48px!important;height:48px!important;
+    border-radius:8px!important;padding:2px 3px!important;
+    font-size:.62rem!important;color:#6f7b89!important;
   }}
-  .st-key-mnav_{page} button{{background:#eef3f0!important;color:#0b6b55!important;font-weight:800!important;}}
+  .st-key-hvb_mobilebar [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child({mobile_active_col}) .stButton button{{
+    background:#eef3f0!important;color:#0b6b55!important;font-weight:800!important;
+  }}
 }}
 </style>
 """,
@@ -1002,7 +1054,7 @@ st.markdown(
 
 with st.container(key="hvb_navbar"):
     with st.container(key="hvb_navbar_inner"):
-        nav_cols = st.columns([2.7, 1.05, 1.45, 1.0, 1.15, .35, 1.55])
+        nav_cols = st.columns([2.8, 1.00, 1.38, .95, 1.08, .50, 1.42])
         with nav_cols[0]:
             st.markdown('<div class="hvb-brand-static"><span class="hvb-logo">HVB</span><span class="brand-name">HV BADMINTON</span></div>', unsafe_allow_html=True)
         with nav_cols[1]:

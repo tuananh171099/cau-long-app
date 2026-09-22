@@ -268,25 +268,39 @@ st.markdown(
   padding-top:0!important;
   margin-top:0!important;
 }}
+[data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] .main{{
+  width:100%!important;
+}}
 .hvb-nav-wrap{{
-  width:100vw!important;
-  max-width:none!important;
   position:sticky!important;
   top:0!important;
-  left:50%!important;
-  transform:translateX(-50%)!important;
-  margin:0 0 1.6rem!important;
+  left:auto!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:none!important;
+  margin-top:0!important;
+  margin-bottom:1.6rem!important;
+  margin-left:calc(50% - 50vw)!important;
+  margin-right:calc(50% - 50vw)!important;
   padding:0!important;
   background:var(--navy)!important;
+  box-sizing:border-box!important;
 }}
 .hvb-nav{{
   width:100%!important;
   max-width:1120px!important;
+  min-height:58px!important;
   margin:0 auto!important;
+  padding:0 1.15rem!important;
   box-sizing:border-box!important;
 }}
 @media(max-width:768px){{
-  .hvb-nav-wrap{{margin:0 0 1.1rem!important;}}
+  .hvb-nav-wrap{{
+    margin-left:calc(50% - 50vw)!important;
+    margin-right:calc(50% - 50vw)!important;
+    margin-bottom:1.1rem!important;
+  }}
+  .hvb-nav{{padding:0 .75rem!important;}}
 }}
 </style>
 """,

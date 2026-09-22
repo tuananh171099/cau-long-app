@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from io import StringIO
 import html
+import textwrap
 import threading
 import time
 
@@ -22,7 +23,7 @@ st.set_page_config(
 # Giữ nguyên 2 URL thật của web cũ tại đây khi thay file.
 # =========================================================
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1KV81efOTe8CbiS7ZKO1H6jWBeDRJIFySmdiA9Ig3xfQ/edit?usp=sharing"
-SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZGD4GKHo9cjMhWyD0-RDq-c7DuWLWnGwBuI77NDCOmGh15fSIG5tX3o9pbl6zaKEhiQ/exec"
+SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiuRsVQ0_ZggmDWiApQKJyUchYzsE_jIv4jy_uUagOGkkrzVFaIid0NJTibDY2TngrSw/exec"
 
 DATA_CACHE_TTL = 15
 CONNECT_TIMEOUT = 5
@@ -635,15 +636,13 @@ def render_match_cards(df, limit=None):
         if str(m.get("video_url", "")).strip():
             video = f"<a class='video-pill' href='{html.escape(str(m['video_url']), quote=True)}' target='_blank'>🎥 Video</a>"
         cards.append(
-            f"""
-            <div class="match-card">
-              <div class="match-card-head"><span class="match-chip">{html.escape(str(m['date']))}</span><span class="match-bet">{html.escape(match_bet_text(m))}</span></div>
-              <div class="team-line {'winner' if t1win else ''}"><div class="team-names">{n1}{video if t1win else ''}</div><div class="team-score">{m['score1']}</div></div>
-              <div class="team-line {'winner' if not t1win else ''}"><div class="team-names">{n2}{video if not t1win else ''}</div><div class="team-score">{m['score2']}</div></div>
-            </div>
-            """
+            '<div class="match-card">'
+            f'<div class="match-card-head"><span class="match-chip">{html.escape(str(m["date"]))}</span><span class="match-bet">{html.escape(match_bet_text(m))}</span></div>'
+            f'<div class="team-line {"winner" if t1win else ""}"><div class="team-names">{n1}{video if t1win else ""}</div><div class="team-score">{m["score1"]}</div></div>'
+            f'<div class="team-line {"winner" if not t1win else ""}"><div class="team-names">{n2}{video if not t1win else ""}</div><div class="team-score">{m["score2"]}</div></div>'
+            '</div>'
         )
-    st.markdown('<div class="match-grid">' + "".join(cards) + "</div>", unsafe_allow_html=True)
+    st.markdown('<div class="match-grid">' + ''.join(cards) + '</div>', unsafe_allow_html=True)
 
 
 def render_podium(lb, value_col="Thắng", suffix="thắng"):
@@ -656,17 +655,16 @@ def render_podium(lb, value_col="Thắng", suffix="thắng"):
         raw_value = float(r[value_col])
         value_text = str(int(raw_value)) if raw_value.is_integer() else f"{raw_value:.1f}"
         cards.append(
-            f"""
-            <div class="{card_cls}">
-              <div class="place-badge">{i+1}</div>
-              <div class="avatar {avatar_class(i)}">{html.escape(initials(r['Tên VĐV']))}</div>
-              <div class="podium-name">{html.escape(str(r['Tên VĐV']))}</div>
-              <div class="podium-meta">{int(r['Tổng Trận'])} trận · thắng {r['% Thắng']:.0f}%</div>
-              <div class="podium-value">{value_text}<small>{html.escape(suffix)}</small></div>
-            </div>
-            """
+            f'<div class="{card_cls}">'
+            f'<div class="place-badge">{i+1}</div>'
+            f'<div class="avatar {avatar_class(i)}">{html.escape(initials(r["Tên VĐV"]))}</div>'
+            f'<div class="podium-name">{html.escape(str(r["Tên VĐV"]))}</div>'
+            f'<div class="podium-meta">{int(r["Tổng Trận"])} trận · thắng {r["% Thắng"]:.0f}%</div>'
+            f'<div class="podium-value">{value_text}<small>{html.escape(suffix)}</small></div>'
+            f'</div>'
         )
-    st.markdown('<div class="podium">' + "".join(cards) + "</div>", unsafe_allow_html=True)
+    podium_html = '<div class="podium">' + ''.join(cards) + '</div>'
+    st.markdown(podium_html, unsafe_allow_html=True)
 
 
 def render_ranking_table(lb):
@@ -679,26 +677,28 @@ def render_ranking_table(lb):
         pct = max(0, min(100, float(r["% Thắng"])))
         # 5 ô phong độ minh họa theo tỉ lệ thắng, không giả lập kết quả từng trận.
         wins = round(pct / 20)
-        form = "".join("<span class='form-dot win'></span>" if j < wins else "<span class='form-dot'></span>" for j in range(5))
-        rows.append(
-            f"""
-            <tr>
-              <td><span class="rank-num {rank_cls}">{i}</span></td>
-              <td><div class="member-cell"><span class="mini-avatar">{html.escape(initials(r['Tên VĐV']))}</span>{html.escape(str(r['Tên VĐV']))}</div></td>
-              <td class="highlight-col">{int(r['Thắng'])}</td>
-              <td>{int(r['Tổng Trận'])}</td>
-              <td>{pct:.0f}%<div class="winbar"><span style="width:{pct:.0f}%"></span></div></td>
-              <td>{int(r['Điểm'])}</td>
-              <td><div class="form-dots">{form}</div></td>
-            </tr>
-            """
+        form = "".join(
+            "<span class='form-dot win'></span>" if j < wins else "<span class='form-dot'></span>"
+            for j in range(5)
         )
-    table = f"""
-    <div class="table-wrap"><table class="hvb-table">
-      <thead><tr><th>Hạng</th><th>Thành viên</th><th>Thắng</th><th>Trận</th><th>Tỉ lệ</th><th>Điểm</th><th>Phong độ</th></tr></thead>
-      <tbody>{''.join(rows)}</tbody>
-    </table></div>
-    """
+        row_html = (
+            '<tr>'
+            f'<td><span class="rank-num {rank_cls}">{i}</span></td>'
+            f'<td><div class="member-cell"><span class="mini-avatar">{html.escape(initials(r["Tên VĐV"]))}</span>{html.escape(str(r["Tên VĐV"]))}</div></td>'
+            f'<td class="highlight-col">{int(r["Thắng"])}</td>'
+            f'<td>{int(r["Tổng Trận"])}</td>'
+            f'<td>{pct:.0f}%<div class="winbar"><span style="width:{pct:.0f}%"></span></div></td>'
+            f'<td>{int(r["Điểm"])}</td>'
+            f'<td><div class="form-dots">{form}</div></td>'
+            '</tr>'
+        )
+        rows.append(row_html)
+    table = (
+        '<div class="table-wrap"><table class="hvb-table">'
+        '<thead><tr><th>Hạng</th><th>Thành viên</th><th>Thắng</th><th>Trận</th><th>Tỉ lệ</th><th>Điểm</th><th>Phong độ</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody>'
+        '</table></div>'
+    )
     st.markdown(table, unsafe_allow_html=True)
 
 
@@ -712,15 +712,13 @@ def render_member_cards(lb_all):
         total = int(s["Tổng Trận"]) if s is not None else 0
         win_pct = float(s["% Thắng"]) if s is not None else 0
         cards.append(
-            f"""
-            <div class="member-card">
-              <div class="avatar {avatar_class(i+1)}">{html.escape(initials(member))}</div>
-              <div class="member-name">{html.escape(member)}</div>
-              <div class="member-stat"><span class="member-tag">{total} trận</span><span>{win_pct:.0f}% thắng</span></div>
-            </div>
-            """
+            '<div class="member-card">'
+            f'<div class="avatar {avatar_class(i+1)}">{html.escape(initials(member))}</div>'
+            f'<div class="member-name">{html.escape(member)}</div>'
+            f'<div class="member-stat"><span class="member-tag">{total} trận</span><span>{win_pct:.0f}% thắng</span></div>'
+            '</div>'
         )
-    st.markdown('<div class="member-grid">' + "".join(cards) + "</div>", unsafe_allow_html=True)
+    st.markdown('<div class="member-grid">' + ''.join(cards) + '</div>', unsafe_allow_html=True)
 
 
 # =========================================================

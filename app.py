@@ -172,7 +172,7 @@ html,body,[data-testid="stAppViewContainer"],.main{
 .podium-card:nth-child(3) .place-badge{background:var(--bronze);color:#fff;}
 .avatar{width:58px;height:58px;border-radius:17px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.25rem;font-weight:900;margin-bottom:10px;background:#8b3ba5;}
 .avatar.red{background:#bd382c}.avatar.gold{background:#ae6b00}.avatar.blue{background:#2c58b8}.avatar.purple{background:#8a3ea0}
-.podium-name{font-weight:800;font-size:.95rem;margin-bottom:6px;}
+.podium-name{font-weight:800;font-size:1.02rem;margin-bottom:8px;margin-top:2px;}
 .podium-meta{font-size:.77rem;color:#8793a3;margin-bottom:12px;}.first .podium-meta{color:#d7dee8;}
 .podium-value{font-size:1.7rem;font-weight:650;line-height:1;}.podium-value small{font-size:.68rem;font-weight:500;margin-left:4px;opacity:.8;}
 
@@ -727,8 +727,7 @@ def render_podium(lb, value_col="Thắng", suffix="thắng"):
         cards.append(
             f'<div class="{card_cls}">'
             f'<div class="place-badge">{i+1}</div>'
-            f'<div class="avatar {avatar_class(i)}">{html.escape(initials(r["Tên VĐV"]))}</div>'
-            f'<div class="podium-name">{html.escape(str(r["Tên VĐV"]))}</div>'
+                        f'<div class="podium-name">{html.escape(str(r["Tên VĐV"]))}</div>'
             f'<div class="podium-meta">{int(r["Tổng Trận"])} trận · thắng {r["% Thắng"]:.0f}%</div>'
             f'<div class="podium-value">{value_text}<small>{html.escape(suffix)}</small></div>'
             f'</div>'
@@ -754,7 +753,7 @@ def render_ranking_table(lb):
         row_html = (
             '<tr>'
             f'<td><span class="rank-num {rank_cls}">{i}</span></td>'
-            f'<td><div class="member-cell"><span class="mini-avatar">{html.escape(initials(r["Tên VĐV"]))}</span>{html.escape(str(r["Tên VĐV"]))}</div></td>'
+            f'<td><div class="member-cell">{html.escape(str(r["Tên VĐV"]))}</div></td>'
             f'<td class="highlight-col">{int(r["Thắng"])}</td>'
             f'<td>{int(r["Tổng Trận"])}</td>'
             f'<td>{pct:.0f}%<div class="winbar"><span style="width:{pct:.0f}%"></span></div></td>'

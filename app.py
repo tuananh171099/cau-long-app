@@ -738,7 +738,7 @@ nav_items = [
     ("members", "Thành viên"),
 ]
 nav_links = "".join(
-    f'<a class="hvb-link {"active" if page == key else ""}" href="?page={key}">{label}</a>'
+    f'<a class="hvb-link {"active" if page == key else ""}" target="_self" href="?page={key}">{label}</a>'
     for key, label in nav_items
 )
 mobile_items = [
@@ -749,16 +749,16 @@ mobile_items = [
     ("admin", "⚙️", "Quản trị"),
 ]
 mobile_links = "".join(
-    f'<a class="{"active" if page == key else ""}" href="?page={key}"><span>{icon}</span>{label}</a>'
+    f'<a class="{"active" if page == key else ""}" target="_self" href="?page={key}"><span>{icon}</span>{label}</a>'
     for key, icon, label in mobile_items
 )
 
 st.markdown(
     f"""
     <div class="hvb-nav-wrap"><div class="hvb-nav">
-      <a class="hvb-brand" href="?page=home"><span class="hvb-logo">HVB</span><span class="hvb-brand-name">HV BADMINTON</span></a>
+      <a class="hvb-brand" target="_self" href="?page=home"><span class="hvb-logo">HVB</span><span class="hvb-brand-name">HV BADMINTON</span></a>
       <div class="hvb-links">{nav_links}</div>
-      <a class="hvb-admin" href="?page=admin">Quản trị</a>
+      <a class="hvb-admin" target="_self" href="?page=admin">Quản trị</a>
     </div></div>
     <div class="hvb-mobile-nav">{mobile_links}</div>
     """,
@@ -794,7 +794,7 @@ if page == "home":
         </div>
         <div class="summary-card">
           <div><div class="summary-label">Mùa hiện tại</div><div class="summary-main">{html.escape(curr['name'])}</div><div class="summary-meta">{html.escape(curr['status'] or 'Đang diễn ra')} · từ {html.escape(curr['start_str'])}</div></div>
-          <a class="summary-link" href="?page=ranking">Xem bảng xếp hạng →</a>
+          <a class="summary-link" target="_self" href="?page=ranking">Xem bảng xếp hạng →</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -809,9 +809,9 @@ if page == "home":
     st.markdown(
         """
         <div class="quick-grid">
-          <a class="quick-card" href="?page=ranking"><div class="quick-title">🏆 Bảng xếp hạng</div><div class="quick-sub">Top thành viên và thống kê chi tiết</div></a>
-          <a class="quick-card" href="?page=members"><div class="quick-title">👥 Thành viên</div><div class="quick-sub">Danh sách và thành tích VĐV</div></a>
-          <a class="quick-card" href="?page=admin"><div class="quick-title">⚙️ Quản trị</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></a>
+          <a class="quick-card" target="_self" href="?page=ranking"><div class="quick-title">🏆 Bảng xếp hạng</div><div class="quick-sub">Top thành viên và thống kê chi tiết</div></a>
+          <a class="quick-card" target="_self" href="?page=members"><div class="quick-title">👥 Thành viên</div><div class="quick-sub">Danh sách và thành tích VĐV</div></a>
+          <a class="quick-card" target="_self" href="?page=admin"><div class="quick-title">⚙️ Quản trị</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></a>
         </div>
         """,
         unsafe_allow_html=True,

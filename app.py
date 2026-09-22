@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 import html
 import textwrap
@@ -237,7 +238,136 @@ div[data-baseweb="select"]>div,.stDateInput>div>div,.stTextInput input,.stNumber
     unsafe_allow_html=True,
 )
 
+st.markdown(
+    f"""
+<style>
+.hero-art{{
+  position:relative;
+  background-image:linear-gradient(rgba(7,107,85,.18), rgba(7,107,85,.18)), url('{CLUB_HERO_DATA_URI}');
+  background-size:cover;
+  background-position:center 36%;
+  background-repeat:no-repeat;
+  opacity:1;
+}}
+.hero-art:before,.hero-art:after{{display:none!important;}}
+@media(max-width:768px){{
+  .hero{{min-height:auto!important;}}
+  .hero-art{{display:block!important;min-height:220px;border-top:1px solid rgba(255,255,255,.12);background-position:center 32%;}}
+}}
 
+/* V8.4: header sát mép trên và navbar phủ kín chiều ngang */
+[data-testid="stHeader"]{{display:none!important;height:0!important;min-height:0!important;}}
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+.stMainBlockContainer,
+.main .block-container{{
+  padding-top:0!important;
+  margin-top:0!important;
+}}
+[data-testid="stAppViewContainer"] .main{{
+  padding-top:0!important;
+  margin-top:0!important;
+}}
+[data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] .main{{
+  width:100%!important;
+}}
+.hvb-nav-wrap{{
+  position:sticky!important;
+  top:0!important;
+  left:auto!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:none!important;
+  margin-top:0!important;
+  margin-bottom:1.6rem!important;
+  margin-left:calc(50% - 50vw)!important;
+  margin-right:calc(50% - 50vw)!important;
+  padding:0!important;
+  background:var(--navy)!important;
+  box-sizing:border-box!important;
+}}
+.hvb-nav{{
+  width:100%!important;
+  max-width:1120px!important;
+  min-height:58px!important;
+  margin:0 auto!important;
+  padding:0 1.15rem!important;
+  box-sizing:border-box!important;
+}}
+@media(max-width:768px){{
+  .hvb-nav-wrap{{
+    margin-left:calc(50% - 50vw)!important;
+    margin-right:calc(50% - 50vw)!important;
+    margin-bottom:1.1rem!important;
+  }}
+  .hvb-nav{{padding:0 .75rem!important;}}
+}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    f"""
+<style>
+/* V8.8 - Hero ảnh CLB toàn khung + chữ trên ảnh */
+.hero{{
+  position:relative!important;
+  min-height:410px!important;
+  display:flex!important;
+  align-items:center!important;
+  overflow:hidden!important;
+  background-image:
+    linear-gradient(90deg, rgba(3,52,42,.94) 0%, rgba(3,52,42,.84) 34%, rgba(3,52,42,.58) 57%, rgba(3,52,42,.22) 78%, rgba(3,52,42,.12) 100%),
+    url('{CLUB_HERO_DATA_URI}')!important;
+  background-size:cover!important;
+  background-position:center 38%!important;
+  background-repeat:no-repeat!important;
+}}
+.hero-copy{{
+  position:relative!important;
+  z-index:2!important;
+  width:min(650px,68%)!important;
+  padding:46px 48px 42px!important;
+  background:transparent!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.18);
+}}
+.hero-art{{display:none!important;}}
+.hero h1{{font-size:2.45rem!important;}}
+.hero-desc{{max-width:570px!important;}}
+.hero-stats{{gap:52px!important;}}
+.hero-stat-value{{font-size:3.15rem!important;}}
+
+@media(max-width:768px){{
+  .hero{{
+    min-height:430px!important;
+    align-items:flex-end!important;
+    background-image:
+      linear-gradient(180deg, rgba(3,52,42,.18) 0%, rgba(3,52,42,.36) 35%, rgba(3,52,42,.90) 72%, rgba(3,52,42,.97) 100%),
+      url('{CLUB_HERO_DATA_URI}')!important;
+    background-position:center 28%!important;
+  }}
+  .hero-copy{{
+    width:100%!important;
+    padding:175px 22px 26px!important;
+  }}
+  .hero-kicker{{font-size:.72rem!important;}}
+  .hero h1{{font-size:1.85rem!important;margin-bottom:10px!important;}}
+  .hero-desc{{font-size:.78rem!important;line-height:1.5!important;margin-bottom:18px!important;max-width:100%!important;}}
+  .hero-stats{{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:10px!important;
+    width:100%!important;
+  }}
+  .hero-stat-value{{font-size:2rem!important;}}
+  .hero-stat-label{{font-size:.62rem!important;}}
+  .hero-stat-note{{font-size:.58rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}
+}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 # =========================================================
 # HTTP / CACHE / GHI DỮ LIỆU
@@ -336,20 +466,36 @@ def fetch_sheet_uncached(sheet_name):
 
 @st.cache_data(ttl=DATA_CACHE_TTL, max_entries=1, show_spinner=False)
 def load_data():
-    try:
-        df_m = fetch_sheet_uncached("Members")
+    # Đọc 3 sheet song song để lần nạp dữ liệu đầu nhanh hơn,
+    # nhưng vẫn giữ nguyên cấu trúc dữ liệu/giao diện cũ.
+    results = {}
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            "Members": executor.submit(fetch_sheet_uncached, "Members"),
+            "Matches": executor.submit(fetch_sheet_uncached, "Matches"),
+            "Seasons": executor.submit(fetch_sheet_uncached, "Seasons"),
+        }
+        for name, future in futures.items():
+            try:
+                results[name] = future.result()
+            except Exception:
+                results[name] = None
+
+    df_m = results.get("Members")
+    if df_m is not None and not df_m.empty and "Tên Thành Viên" in df_m.columns:
         members = df_m["Tên Thành Viên"].dropna().astype(str).str.strip()
         members = members[members.ne("")].tolist()
-    except Exception:
+    else:
         members = []
-    try:
-        df_matches = fetch_sheet_uncached("Matches")
-    except Exception:
+
+    df_matches = results.get("Matches")
+    if df_matches is None:
         df_matches = pd.DataFrame()
-    try:
-        df_seasons = fetch_sheet_uncached("Seasons")
-    except Exception:
+
+    df_seasons = results.get("Seasons")
+    if df_seasons is None:
         df_seasons = pd.DataFrame(columns=["Tên Mùa", "Ngày Bắt Đầu", "Ngày Kết Thúc", "Trạng Thái"])
+
     return members, df_matches, df_seasons
 
 
@@ -723,121 +869,120 @@ def render_member_cards(lb_all):
 
 
 # =========================================================
-# NAVIGATION NHANH - KHÔNG LOAD LẠI TOÀN TRANG
-# Dùng widget Streamlit thay vì href ?page=... để giữ WebSocket hiện tại.
+# NAVIGATION CŨ ĐÃ KHÔI PHỤC - GIỮ NGUYÊN GIAO DIỆN + CLICK TRONG CÙNG TAB
 # =========================================================
-NAV_LABEL_TO_PAGE = {
-    "Trang chủ": "home",
-    "Bảng xếp hạng": "ranking",
-    "Trận đấu": "matches",
-    "Thành viên": "members",
-    "Quản lý CLB": "admin",
-}
-NAV_PAGE_TO_LABEL = {v: k for k, v in NAV_LABEL_TO_PAGE.items()}
+page = st.query_params.get("page", "home")
+if isinstance(page, list):
+    page = page[0]
+allowed = {"home", "ranking", "matches", "members", "admin"}
+if page not in allowed:
+    page = "home"
 
-if "active_page" not in st.session_state:
-    initial_page = st.query_params.get("page", "home")
-    if isinstance(initial_page, list):
-        initial_page = initial_page[0]
-    if initial_page not in NAV_PAGE_TO_LABEL:
-        initial_page = "home"
-    st.session_state.active_page = initial_page
+nav_items = [
+    ("home", "Trang chủ"),
+    ("ranking", "Bảng xếp hạng"),
+    ("matches", "Trận đấu"),
+    ("members", "Thành viên"),
+]
+nav_links = "".join(
+    f'<a class="hvb-link {"active" if page == key else ""}" target="_self" href="?page={key}">{label}</a>'
+    for key, label in nav_items
+)
+mobile_items = [
+    ("home", "🏠", "Trang chủ"),
+    ("ranking", "🏆", "BXH"),
+    ("matches", "🏸", "Trận"),
+    ("members", "👥", "VĐV"),
+    ("admin", "⚙️", "Quản lý CLB"),
+]
+mobile_links = "".join(
+    f'<a class="{"active" if page == key else ""}" target="_self" href="?page={key}"><span>{icon}</span>{label}</a>'
+    for key, icon, label in mobile_items
+)
 
-st.markdown('<div class="fast-nav-bg"></div>', unsafe_allow_html=True)
-nav_brand_col, nav_menu_col = st.columns([1.65, 5.35], gap="small")
-with nav_brand_col:
-    st.markdown(
-        '<div class="fast-nav-marker"><span class="fast-nav-logo">HVB</span><span class="fast-nav-brand">HV BADMINTON</span></div>',
-        unsafe_allow_html=True,
-    )
-with nav_menu_col:
-    nav_labels = list(NAV_LABEL_TO_PAGE.keys())
-    current_label = NAV_PAGE_TO_LABEL.get(st.session_state.active_page, "Trang chủ")
-    selected_label = st.radio(
-        "Điều hướng",
-        nav_labels,
-        index=nav_labels.index(current_label),
-        horizontal=True,
-        label_visibility="collapsed",
-        key="fast_nav_radio",
-    )
+st.markdown(
+    f"""
+    <div class="hvb-nav-wrap"><div class="hvb-nav">
+      <a class="hvb-brand" target="_self" href="?page=home"><span class="hvb-logo">HVB</span><span class="hvb-brand-name">HV BADMINTON</span></a>
+      <div class="hvb-links">{nav_links}</div>
+      <a class="hvb-admin" target="_self" href="?page=admin">Quản lý CLB</a>
+    </div></div>
+    <div class="hvb-mobile-nav">{mobile_links}</div>
+    """,
+    unsafe_allow_html=True,
+)
 
-selected_page = NAV_LABEL_TO_PAGE[selected_label]
-if selected_page != st.session_state.active_page:
-    st.session_state.active_page = selected_page
-page = st.session_state.active_page
+render_queued_success()
 
 st.markdown(
     """
 <style>
-/* Thanh điều hướng dùng widget nội bộ: đổi mục không refresh trình duyệt */
-.fast-nav-bg{
-  position:fixed;top:0;left:0;right:0;height:70px;z-index:99996;
-  background:linear-gradient(90deg,#084c3d 0%,#0b6b55 52%,#0d755d 100%);
-  box-shadow:0 10px 28px rgba(5,45,37,.16);
-  border-bottom:1px solid rgba(255,255,255,.08);
+/* V8.10 - navbar flush top + refreshed green style */
+[data-testid="stHeader"], header[data-testid="stHeader"]{display:none!important;height:0!important;min-height:0!important;}
+html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] .main{margin-top:0!important;padding-top:0!important;}
+.main .block-container{padding-top:76px!important;}
+.hvb-nav-wrap{
+  position:fixed!important;
+  top:0!important;left:0!important;right:0!important;
+  width:100vw!important;
+  margin:0!important;
+  padding:0!important;
+  background:linear-gradient(90deg,#084c3d 0%, #0b6b55 52%, #0d755d 100%)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:0 10px 28px rgba(5,45,37,.18)!important;
+  z-index:99999!important;
 }
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker){
-  position:fixed!important;top:0!important;left:50%!important;transform:translateX(-50%)!important;
-  width:min(1160px,100vw)!important;height:70px!important;z-index:99999!important;
-  align-items:center!important;padding:0 1.1rem!important;box-sizing:border-box!important;
+.hvb-nav{
+  min-height:70px!important;
+  max-width:1160px!important;
+  padding:0 1.25rem!important;
 }
-.fast-nav-marker{display:flex;align-items:center;gap:11px;color:#fff;font-weight:850;white-space:nowrap;}
-.fast-nav-logo{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;}
-.fast-nav-brand{font-size:.98rem;letter-spacing:.01em;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [data-testid="stRadio"]{margin:0!important;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [data-testid="stRadio"] > label{display:none!important;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"]{display:flex!important;flex-direction:row!important;justify-content:flex-end!important;gap:7px!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none!important;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"]::-webkit-scrollbar{display:none!important;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"] label{
-  padding:8px 12px!important;border-radius:999px!important;white-space:nowrap!important;
-  color:rgba(255,255,255,.88)!important;font-size:.82rem!important;font-weight:650!important;
-  transition:background .15s ease!important;
+.hvb-brand{gap:12px!important;}
+.hvb-logo{
+  background:rgba(255,255,255,.16)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  backdrop-filter:blur(4px);
 }
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"] label:hover{background:rgba(255,255,255,.10)!important;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"] label:has(input:checked){background:rgba(255,255,255,.17)!important;color:#fff!important;font-weight:800!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)!important;}
-div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"] label > div:first-child{display:none!important;}
-.main .block-container{padding-top:82px!important;}
-/* Ẩn navbar HTML cũ nếu CSS cũ còn sót */
-.hvb-nav-wrap,.hvb-mobile-nav{display:none!important;}
+.hvb-brand-name{letter-spacing:.01em!important;font-size:1rem!important;}
+.hvb-links{gap:12px!important;justify-content:flex-start!important;}
+.hvb-link{
+  border-bottom:none!important;
+  padding:10px 14px!important;
+  border-radius:999px!important;
+  color:rgba(255,255,255,.86)!important;
+  transition:all .18s ease;
+}
+.hvb-link:hover{background:rgba(255,255,255,.10)!important;color:#fff!important;}
+.hvb-link.active{
+  background:rgba(255,255,255,.15)!important;
+  color:#fff!important;
+  font-weight:800!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.hvb-admin{
+  background:#f5f0e6!important;
+  color:#0c5a48!important;
+  border-radius:999px!important;
+  padding:10px 18px!important;
+  font-weight:800!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
+}
+.hvb-admin:hover{background:#fff7ea!important;}
 @media(max-width:768px){
-  .fast-nav-bg{height:58px;}
-  div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker){height:58px!important;padding:0 .6rem!important;}
-  .fast-nav-brand{display:none!important;}.fast-nav-logo{width:31px;height:31px;}
-  div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker){grid-template-columns:42px minmax(0,1fr)!important;gap:5px!important;}
-  div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"]{justify-content:flex-start!important;gap:3px!important;}
-  div[data-testid="stHorizontalBlock"]:has(.fast-nav-marker) [role="radiogroup"] label{font-size:.66rem!important;padding:7px 8px!important;}
-  .main .block-container{padding-top:68px!important;}
+  .main .block-container{padding-top:64px!important;padding-bottom:5.4rem!important;}
+  .hvb-nav{min-height:58px!important;padding:0 .82rem!important;}
+  .hvb-brand-name{font-size:.9rem!important;}
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-render_queued_success()
-
 # =========================================================
 # TRANG CHỦ
 # =========================================================
 if page == "home":
-    hero_css = """
-<style>
-.hero{
-  position:relative!important;min-height:410px!important;display:flex!important;align-items:center!important;overflow:hidden!important;
-  background-image:linear-gradient(90deg,rgba(3,52,42,.94) 0%,rgba(3,52,42,.84) 34%,rgba(3,52,42,.58) 57%,rgba(3,52,42,.22) 78%,rgba(3,52,42,.12) 100%),url('__HERO__')!important;
-  background-size:cover!important;background-position:center 38%!important;background-repeat:no-repeat!important;
-}
-.hero-copy{position:relative!important;z-index:2!important;width:min(650px,68%)!important;padding:46px 48px 42px!important;background:transparent!important;text-shadow:0 1px 2px rgba(0,0,0,.18);}
-.hero-art{display:none!important;}
-.hero h1{font-size:2.45rem!important;}.hero-desc{max-width:570px!important;}.hero-stats{gap:52px!important;}.hero-stat-value{font-size:3.15rem!important;}
-@media(max-width:768px){
-  .hero{min-height:430px!important;align-items:flex-end!important;background-image:linear-gradient(180deg,rgba(3,52,42,.18) 0%,rgba(3,52,42,.36) 35%,rgba(3,52,42,.90) 72%,rgba(3,52,42,.97) 100%),url('__HERO__')!important;background-position:center 28%!important;}
-  .hero-copy{width:100%!important;padding:175px 22px 26px!important;}.hero-kicker{font-size:.72rem!important;}.hero h1{font-size:1.85rem!important;margin-bottom:10px!important;}.hero-desc{font-size:.78rem!important;line-height:1.5!important;margin-bottom:18px!important;max-width:100%!important;}
-  .hero-stats{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;width:100%!important;}.hero-stat-value{font-size:2rem!important;}.hero-stat-label{font-size:.62rem!important;}.hero-stat-note{font-size:.58rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-}
-</style>
-""".replace("__HERO__", CLUB_HERO_DATA_URI)
-    st.markdown(hero_css, unsafe_allow_html=True)
     curr = current_season_item()
     curr_matches = season_matches(curr)
     lb = leaderboard_for_season(curr)
@@ -861,7 +1006,7 @@ if page == "home":
         </div>
         <div class="summary-card">
           <div><div class="summary-label">Mùa hiện tại</div><div class="summary-main">{html.escape(curr['name'])}</div><div class="summary-meta">{html.escape(curr['status'] or 'Đang diễn ra')} · từ {html.escape(curr['start_str'])}</div></div>
-          <span class="summary-link">Chọn “Bảng xếp hạng” trên thanh menu ↑</span>
+          <a class="summary-link" target="_self" href="?page=ranking">Xem bảng xếp hạng →</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -876,9 +1021,9 @@ if page == "home":
     st.markdown(
         """
         <div class="quick-grid">
-          <div class="quick-card"><div class="quick-title">🏆 Bảng xếp hạng</div><div class="quick-sub">Top thành viên và thống kê chi tiết</div></div>
-          <div class="quick-card"><div class="quick-title">👥 Thành viên</div><div class="quick-sub">Danh sách và thành tích VĐV</div></div>
-          <div class="quick-card"><div class="quick-title">⚙️ Quản lý CLB</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></div>
+          <a class="quick-card" target="_self" href="?page=ranking"><div class="quick-title">🏆 Bảng xếp hạng</div><div class="quick-sub">Top thành viên và thống kê chi tiết</div></a>
+          <a class="quick-card" target="_self" href="?page=members"><div class="quick-title">👥 Thành viên</div><div class="quick-sub">Danh sách và thành tích VĐV</div></a>
+          <a class="quick-card" target="_self" href="?page=admin"><div class="quick-title">⚙️ Quản lý CLB</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></a>
         </div>
         """,
         unsafe_allow_html=True,

@@ -1105,7 +1105,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer
     unsafe_allow_html=True,
 )
 
-# V8.19 - Mobile hero compact: chữ nhỏ gọn, bỏ số thành viên, hiển thị trọn ảnh CLB
+# V8.20 - Mobile hero refined: phần đầu dồn lên trên, desc xuống góc phải, ảnh rõ hơn
 st.markdown(
     f"""
 <style>
@@ -1118,8 +1118,8 @@ st.markdown(
     aspect-ratio:4 / 3!important;
     overflow:hidden!important;
     background-image:
-      linear-gradient(90deg, rgba(3,52,42,.88) 0%, rgba(3,52,42,.68) 42%, rgba(3,52,42,.26) 68%, rgba(3,52,42,.04) 100%),
-      linear-gradient(0deg, rgba(3,52,42,.38) 0%, rgba(3,52,42,.06) 56%, rgba(3,52,42,0) 100%),
+      linear-gradient(90deg, rgba(3,52,42,.72) 0%, rgba(3,52,42,.44) 34%, rgba(3,52,42,.18) 60%, rgba(3,52,42,.02) 100%),
+      linear-gradient(0deg, rgba(3,52,42,.22) 0%, rgba(3,52,42,.04) 54%, rgba(3,52,42,0) 100%),
       url('{CLUB_HERO_DATA_URI}')!important;
     background-size:cover!important;
     background-position:center center!important;
@@ -1127,34 +1127,41 @@ st.markdown(
   }}
   .hero-copy{{
     position:absolute!important;
-    left:20px!important;
-    bottom:22px!important;
-    width:62%!important;
-    max-width:240px!important;
+    inset:18px 16px 18px 16px!important;
+    width:auto!important;
+    max-width:none!important;
     padding:0!important;
-    display:block!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:space-between!important;
     background:transparent!important;
-    text-shadow:0 2px 4px rgba(0,0,0,.34)!important;
+    text-shadow:0 2px 4px rgba(0,0,0,.26)!important;
   }}
-  .hero-kicker{{font-size:.60rem!important;line-height:1.25!important;margin:0 0 7px!important;}}
-  .hero h1{{font-size:1.42rem!important;line-height:1.08!important;margin:0 0 9px!important;letter-spacing:-.02em!important;}}
-  .hero-desc{{font-size:.63rem!important;line-height:1.4!important;margin:0 0 11px!important;max-width:100%!important;}}
+  .hero-top{{max-width:52%!important;}}
+  .hero-kicker{{font-size:.62rem!important;line-height:1.15!important;margin:0 0 4px!important;}}
+  .hero h1{{font-size:1.36rem!important;line-height:1.04!important;margin:0!important;letter-spacing:-.02em!important;}}
+  .hero-bottom{{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:12px!important;}}
+  .hero-desc{{font-size:.62rem!important;line-height:1.28!important;margin:0 0 3px!important;max-width:none!important;flex:1 1 auto!important;text-align:left!important;}}
   .hero-stats{{
     display:grid!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:16px!important;
-    width:100%!important;
+    grid-template-columns:repeat(2,max-content)!important;
+    gap:10px!important;
+    width:auto!important;
     align-items:end!important;
+    flex:0 0 auto!important;
   }}
-  .hero-stat-label{{font-size:.57rem!important;margin-bottom:1px!important;}}
-  .hero-stat-value{{font-size:1.62rem!important;line-height:1!important;}}
-  .hero-stat-note{{font-size:.53rem!important;margin-top:5px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}}
+  .hero-stat-label{{font-size:.58rem!important;margin-bottom:1px!important;}}
+  .hero-stat-value{{font-size:1.52rem!important;line-height:1!important;}}
+  .hero-stat-note{{font-size:.52rem!important;margin-top:4px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}}
 }}
 @media(max-width:390px){{
-  .hero-copy{{left:16px!important;bottom:18px!important;width:64%!important;max-width:220px!important;}}
-  .hero h1{{font-size:1.30rem!important;}}
-  .hero-desc{{font-size:.59rem!important;}}
-  .hero-stat-value{{font-size:1.48rem!important;}}
+  .hero-copy{{inset:16px 14px 16px 14px!important;}}
+  .hero-top{{max-width:56%!important;}}
+  .hero h1{{font-size:1.26rem!important;}}
+  .hero-kicker{{font-size:.58rem!important;}}
+  .hero-desc{{font-size:.58rem!important;line-height:1.24!important;}}
+  .hero-stat-value{{font-size:1.38rem!important;}}
+  .hero-stats{{gap:8px!important;}}
 }}
 </style>
 """,
@@ -1175,12 +1182,16 @@ if page == "home":
         f"""
         <div class="hero">
           <div class="hero-copy">
-            <div class="hero-kicker">CLB Cầu Lông HV BADMINTON</div>
-            <h1>Bảng Xếp Hạng</h1>
-            <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
-            <div class="hero-stats">
-              <div><div class="hero-stat-label">Trận</div><div class="hero-stat-value">{total_matches}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
-              <div><div class="hero-stat-label">Dẫn đầu</div><div class="hero-stat-value">{leader_wins}</div><div class="hero-stat-note">{html.escape(str(leader))}</div></div>
+            <div class="hero-top">
+              <div class="hero-kicker">CLB Cầu Lông HV BADMINTON</div>
+              <h1>Bảng Xếp Hạng</h1>
+            </div>
+            <div class="hero-bottom">
+              <div class="hero-stats">
+                <div><div class="hero-stat-label">Trận</div><div class="hero-stat-value">{total_matches}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
+                <div><div class="hero-stat-label">Dẫn đầu</div><div class="hero-stat-value">{leader_wins}</div><div class="hero-stat-note">{html.escape(str(leader))}</div></div>
+              </div>
+              <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
             </div>
           </div>
           <div class="hero-art"></div>

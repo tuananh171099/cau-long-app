@@ -897,6 +897,71 @@ st.markdown(
 
 render_queued_success()
 
+st.markdown(
+    """
+<style>
+/* V8.10 - navbar flush top + refreshed green style */
+[data-testid="stHeader"], header[data-testid="stHeader"]{display:none!important;height:0!important;min-height:0!important;}
+html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] .main{margin-top:0!important;padding-top:0!important;}
+.main .block-container{padding-top:76px!important;}
+.hvb-nav-wrap{
+  position:fixed!important;
+  top:0!important;left:0!important;right:0!important;
+  width:100vw!important;
+  margin:0!important;
+  padding:0!important;
+  background:linear-gradient(90deg,#084c3d 0%, #0b6b55 52%, #0d755d 100%)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:0 10px 28px rgba(5,45,37,.18)!important;
+  z-index:99999!important;
+}
+.hvb-nav{
+  min-height:70px!important;
+  max-width:1160px!important;
+  padding:0 1.25rem!important;
+}
+.hvb-brand{gap:12px!important;}
+.hvb-logo{
+  background:rgba(255,255,255,.16)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  backdrop-filter:blur(4px);
+}
+.hvb-brand-name{letter-spacing:.01em!important;font-size:1rem!important;}
+.hvb-links{gap:12px!important;justify-content:flex-start!important;}
+.hvb-link{
+  border-bottom:none!important;
+  padding:10px 14px!important;
+  border-radius:999px!important;
+  color:rgba(255,255,255,.86)!important;
+  transition:all .18s ease;
+}
+.hvb-link:hover{background:rgba(255,255,255,.10)!important;color:#fff!important;}
+.hvb-link.active{
+  background:rgba(255,255,255,.15)!important;
+  color:#fff!important;
+  font-weight:800!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+}
+.hvb-admin{
+  background:#f5f0e6!important;
+  color:#0c5a48!important;
+  border-radius:999px!important;
+  padding:10px 18px!important;
+  font-weight:800!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
+}
+.hvb-admin:hover{background:#fff7ea!important;}
+@media(max-width:768px){
+  .main .block-container{padding-top:64px!important;padding-bottom:5.4rem!important;}
+  .hvb-nav{min-height:58px!important;padding:0 .82rem!important;}
+  .hvb-brand-name{font-size:.9rem!important;}
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 # =========================================================
 # TRANG CHỦ
 # =========================================================

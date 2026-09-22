@@ -254,6 +254,40 @@ st.markdown(
   .hero{{min-height:auto!important;}}
   .hero-art{{display:block!important;min-height:220px;border-top:1px solid rgba(255,255,255,.12);background-position:center 32%;}}
 }}
+
+/* V8.4: header sát mép trên và navbar phủ kín chiều ngang */
+[data-testid="stHeader"]{{display:none!important;height:0!important;min-height:0!important;}}
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+.stMainBlockContainer,
+.main .block-container{{
+  padding-top:0!important;
+  margin-top:0!important;
+}}
+[data-testid="stAppViewContainer"] .main{{
+  padding-top:0!important;
+  margin-top:0!important;
+}}
+.hvb-nav-wrap{{
+  width:100vw!important;
+  max-width:none!important;
+  position:sticky!important;
+  top:0!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  margin:0 0 1.6rem!important;
+  padding:0!important;
+  background:var(--navy)!important;
+}}
+.hvb-nav{{
+  width:100%!important;
+  max-width:1120px!important;
+  margin:0 auto!important;
+  box-sizing:border-box!important;
+}}
+@media(max-width:768px){{
+  .hvb-nav-wrap{{margin:0 0 1.1rem!important;}}
+}}
 </style>
 """,
     unsafe_allow_html=True,
@@ -769,7 +803,7 @@ mobile_items = [
     ("ranking", "🏆", "BXH"),
     ("matches", "🏸", "Trận"),
     ("members", "👥", "VĐV"),
-    ("admin", "⚙️", "Quản trị"),
+    ("admin", "⚙️", "Quản lý CLB"),
 ]
 mobile_links = "".join(
     f'<a class="{"active" if page == key else ""}" target="_self" href="?page={key}"><span>{icon}</span>{label}</a>'
@@ -781,7 +815,7 @@ st.markdown(
     <div class="hvb-nav-wrap"><div class="hvb-nav">
       <a class="hvb-brand" target="_self" href="?page=home"><span class="hvb-logo">HVB</span><span class="hvb-brand-name">HV BADMINTON</span></a>
       <div class="hvb-links">{nav_links}</div>
-      <a class="hvb-admin" target="_self" href="?page=admin">Quản trị</a>
+      <a class="hvb-admin" target="_self" href="?page=admin">Quản lý CLB</a>
     </div></div>
     <div class="hvb-mobile-nav">{mobile_links}</div>
     """,
@@ -834,7 +868,7 @@ if page == "home":
         <div class="quick-grid">
           <a class="quick-card" target="_self" href="?page=ranking"><div class="quick-title">🏆 Bảng xếp hạng</div><div class="quick-sub">Top thành viên và thống kê chi tiết</div></a>
           <a class="quick-card" target="_self" href="?page=members"><div class="quick-title">👥 Thành viên</div><div class="quick-sub">Danh sách và thành tích VĐV</div></a>
-          <a class="quick-card" target="_self" href="?page=admin"><div class="quick-title">⚙️ Quản trị</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></a>
+          <a class="quick-card" target="_self" href="?page=admin"><div class="quick-title">⚙️ Quản lý CLB</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -900,7 +934,7 @@ elif page == "members":
 # QUẢN TRỊ - GỘP TOÀN BỘ THAO TÁC Ở MỘT NƠI
 # =========================================================
 elif page == "admin":
-    st.markdown('<div class="page-kicker">Khu vực quản lý</div><div class="page-title">Quản trị</div><div class="page-subtitle">Ghi trận, sửa/xóa dữ liệu, quản lý mùa và thành viên.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-kicker">Khu vực quản lý</div><div class="page-title">Quản lý CLB</div><div class="page-subtitle">Ghi trận, sửa/xóa dữ liệu, quản lý mùa và thành viên.</div>', unsafe_allow_html=True)
     tab_add, tab_edit, tab_season, tab_members = st.tabs(["📝 Ghi trận", "✏️ Sửa / Xóa trận", "🏆 Mùa giải", "👥 Thành viên"])
 
     with tab_add:

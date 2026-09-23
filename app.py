@@ -1265,8 +1265,12 @@ if page == "home":
     curr = current_season_item()
     curr_matches = season_matches(curr)
     lb = leaderboard_for_season(curr)
-    leader = lb.iloc[0]["Tên VĐV"] if not lb.empty else "—"
-    leader_wins = int(lb.iloc[0]["Thắng"]) if not lb.empty else 0
+    total_season_points = float(lb["Điểm"].sum()) if not lb.empty else 0.0
+    lb_points = (
+        lb.sort_values(["Điểm", "Tổng Trận", "Thắng"], ascending=[False, False, False])
+        .reset_index(drop=True)
+        if not lb.empty else lb
+    )
     total_matches = len(curr_matches)
     st.markdown(
         f"""
@@ -1279,7 +1283,7 @@ if page == "home":
             <div class="hero-bottom">
               <div class="hero-stats">
                 <div><div class="hero-stat-label">Trận</div><div class="hero-stat-value">{total_matches}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
-                <div><div class="hero-stat-label">Dẫn đầu</div><div class="hero-stat-value">{leader_wins}</div><div class="hero-stat-note">{html.escape(str(leader))}</div></div>
+                <div><div class="hero-stat-label">Tổng điểm</div><div class="hero-stat-value">{fmt_point(total_season_points)}</div><div class="hero-stat-note">{html.escape(curr['name'])}</div></div>
               </div>
               <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
             </div>
@@ -1297,8 +1301,8 @@ if page == "home":
     st.markdown('<div class="section-rule"></div><div class="section-heading">Trận gần nhất</div>', unsafe_allow_html=True)
     render_match_cards(curr_matches, limit=6)
 
-    st.markdown('<div class="section-rule"></div><div class="section-heading">Top phong độ</div>', unsafe_allow_html=True)
-    render_podium(lb)
+    st.markdown('<div class="section-rule"></div><div class="section-heading">Top Điểm Của Mùa</div>', unsafe_allow_html=True)
+    render_podium(lb_points, value_col="Điểm", suffix=" điểm")
 
     st.markdown(
         """

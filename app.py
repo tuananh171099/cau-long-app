@@ -179,18 +179,18 @@ html,body,[data-testid="stAppViewContainer"],.main{
 
 /* Ranking table custom */
 .table-wrap{overflow-x:auto;border-top:1px solid transparent;}
-.hvb-table{width:100%;border-collapse:collapse;min-width:760px;font-size:.82rem;table-layout:fixed;}
-.hvb-table col.col-rank{width:64px;}
-.hvb-table col.col-member{width:150px;}
-.hvb-table col.col-match{width:76px;}
-.hvb-table col.col-win{width:76px;}
-.hvb-table col.col-point{width:82px;}
-.hvb-table col.col-rate{width:135px;}
-.hvb-table col.col-form{width:150px;}
-.hvb-table th{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);font-weight:800;color:#111;white-space:nowrap;}
-.hvb-table td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
-.hvb-table th:first-child,.hvb-table td:first-child{padding-left:8px;padding-right:6px;}
-.hvb-table th:nth-child(2),.hvb-table td:nth-child(2){padding-left:8px;padding-right:8px;}
+.hvb-table{width:100%;border-collapse:collapse;min-width:650px;font-size:.79rem;table-layout:fixed;}
+.hvb-table col.col-rank{width:50px;}
+.hvb-table col.col-member{width:120px;}
+.hvb-table col.col-match{width:58px;}
+.hvb-table col.col-win{width:58px;}
+.hvb-table col.col-point{width:64px;}
+.hvb-table col.col-rate{width:118px;}
+.hvb-table col.col-form{width:118px;}
+.hvb-table th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);font-weight:800;color:#111;white-space:nowrap;}
+.hvb-table td{padding:10px 6px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.hvb-table th:first-child,.hvb-table td:first-child{padding-left:5px;padding-right:3px;}
+.hvb-table th:nth-child(2),.hvb-table td:nth-child(2){padding-left:5px;padding-right:5px;}
 .hvb-table tr:hover td{background:#fbfcfd;}
 .rank-num{display:inline-flex;width:26px;height:26px;border-radius:6px;background:#aeb9c7;align-items:center;justify-content:center;font-weight:800;color:#203040;}
 .rank-num.r1{background:var(--gold);}.rank-num.r3{background:var(--bronze);color:#fff;}
@@ -201,18 +201,62 @@ html,body,[data-testid="stAppViewContainer"],.main{
 .form-dots{display:flex;gap:5px}.form-dot{width:20px;height:20px;border-radius:4px;background:#dfe4e9}.form-dot.win{background:#08765a}
 
 @media(max-width:768px){
-  .hvb-table{min-width:700px;font-size:.78rem;}
-  .hvb-table col.col-rank{width:54px;}
-  .hvb-table col.col-member{width:125px;}
-  .hvb-table col.col-match{width:66px;}
-  .hvb-table col.col-win{width:66px;}
-  .hvb-table col.col-point{width:72px;}
-  .hvb-table col.col-rate{width:122px;}
-  .hvb-table col.col-form{width:125px;}
-  .hvb-table th,.hvb-table td{padding:10px 8px;}
-  .rank-num{width:24px;height:24px;}
-  .winbar{width:78px;}
-  .form-dot{width:17px;height:17px;}
+  .table-wrap{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .hvb-table{
+    min-width:560px!important;
+    font-size:.70rem!important;
+    table-layout:fixed!important;
+  }
+  .hvb-table col.col-rank{width:40px!important;}
+  .hvb-table col.col-member{width:96px!important;}
+  .hvb-table col.col-match{width:48px!important;}
+  .hvb-table col.col-win{width:48px!important;}
+  .hvb-table col.col-point{width:52px!important;}
+  .hvb-table col.col-rate{width:102px!important;}
+  .hvb-table col.col-form{width:92px!important;}
+
+  .hvb-table th,
+  .hvb-table td{
+    padding:8px 4px!important;
+    line-height:1.22!important;
+  }
+  .hvb-table th:first-child,
+  .hvb-table td:first-child{
+    padding-left:4px!important;
+    padding-right:2px!important;
+  }
+  .hvb-table th:nth-child(2),
+  .hvb-table td:nth-child(2){
+    padding-left:4px!important;
+    padding-right:3px!important;
+  }
+
+  .member-cell{
+    gap:3px!important;
+    font-size:.70rem!important;
+    white-space:normal!important;
+    line-height:1.18!important;
+  }
+  .rank-num{
+    width:22px!important;
+    height:22px!important;
+    font-size:.65rem!important;
+    border-radius:6px!important;
+  }
+  .winbar{
+    width:58px!important;
+    height:3px!important;
+    margin-top:4px!important;
+  }
+  .form-dots{gap:3px!important;}
+  .form-dot{
+    width:13px!important;
+    height:13px!important;
+    border-radius:3px!important;
+  }
 }
 
 /* Member cards */
@@ -1371,12 +1415,12 @@ elif page == "ranking":
     }
     col = map_col[metric]
 
-    # Điểm là điểm phạt của đội thua: điểm càng thấp càng xếp trên.
-    ascending = metric == "Tổng điểm"
+    # Tất cả tiêu chí đều xếp từ cao xuống thấp.
+    # Riêng Tổng điểm: người có NHIỀU điểm nhất đứng trên.
     if not lb_base.empty:
         lb = lb_base.sort_values(
             [col, "% Thắng", "Thắng"],
-            ascending=[ascending, False, False],
+            ascending=[False, False, False],
         ).reset_index(drop=True)
     else:
         lb = lb_base

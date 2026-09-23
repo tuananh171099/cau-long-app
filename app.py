@@ -508,6 +508,23 @@ def to_int(val, default=0):
     return default
 
 
+def to_float(val, default=0.0):
+    try:
+        if pd.notna(val):
+            return float(val)
+    except Exception:
+        pass
+    return float(default)
+
+
+def fmt_point(val):
+    """Hiển thị điểm gọn: 1, 0.5, 0.25, 0.75..."""
+    v = abs(to_float(val, 0.0))
+    if abs(v - round(v)) < 1e-9:
+        return str(int(round(v)))
+    return f"{v:.2f}".rstrip("0").rstrip(".")
+
+
 def get_val(row, key, col_idx, default=""):
     if key in row and pd.notna(row[key]):
         return row[key]
@@ -564,14 +581,14 @@ def parse_match_row(row):
     match_date = format_date_vn(raw_date)
     dt_obj = parse_date_obj(raw_date)
     p1_1 = str(get_val(row, "Đội 1 - VĐV 1", 1, "")).strip()
-    k1_1 = to_int(get_val(row, "Kèo 1_1", 2, 1), 1)
+    k1_1 = to_float(get_val(row, "Điểm 1_1", 2, get_val(row, "Kèo 1_1", 2, 0)), 0)
     p1_2 = str(get_val(row, "Đội 1 - VĐV 2", 3, "")).strip()
-    k1_2 = to_int(get_val(row, "Kèo 1_2", 4, 1), 1)
+    k1_2 = to_float(get_val(row, "Điểm 1_2", 4, get_val(row, "Kèo 1_2", 4, 0)), 0)
     score1 = to_int(get_val(row, "Điểm Đội 1", 5, 0), 0)
     p2_1 = str(get_val(row, "Đội 2 - VĐV 1", 6, "")).strip()
-    k2_1 = to_int(get_val(row, "Kèo 2_1", 7, 1), 1)
+    k2_1 = to_float(get_val(row, "Điểm 2_1", 7, get_val(row, "Kèo 2_1", 7, 0)), 0)
     p2_2 = str(get_val(row, "Đội 2 - VĐV 2", 8, "")).strip()
-    k2_2 = to_int(get_val(row, "Kèo 2_2", 9, 1), 1)
+    k2_2 = to_float(get_val(row, "Điểm 2_2", 9, get_val(row, "Kèo 2_2", 9, 0)), 0)
     score2 = to_int(get_val(row, "Điểm Đội 2", 10, 0), 0)
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
     video_url = str(get_val(row, "Video", 12, "")).strip()
@@ -718,7 +735,7 @@ def calculate_leaderboard(df_filtered):
             if l_player in stats:
                 stats[l_player]["Thua"] += 1
                 stats[l_player]["Tổng Trận"] += 1
-                stats[l_player]["Điểm"] += l_bet
+                stats[l_player]["Điểm"] += abs(to_float(l_bet, 0.0))
     rows = []
     for name, s in stats.items():
         if s["Tổng Trận"] > 0:
@@ -762,7 +779,7 @@ def leaderboard_for_season(season):
 
 def match_bet_text(m):
     vals = [m["k1_1"], m["k1_2"], m["k2_1"], m["k2_2"]]
-    return "Kèo " + "/".join(str(v) for v in vals)
+    return "Điểm " + "/".join(fmt_point(v) for v in vals)
 
 
 def render_match_cards(df, limit=None):
@@ -775,8 +792,8 @@ def render_match_cards(df, limit=None):
     cards = []
     for pos, (_, m) in enumerate(work.iterrows(), start=1):
         t1win = (m["winner"] == "Đội 1") or (m["score1"] > m["score2"])
-        n1 = f"{html.escape(str(m['p1_1']))} <span class='k-val'>+{m['k1_1']}</span><br>{html.escape(str(m['p1_2']))} <span class='k-val'>+{m['k1_2']}</span>"
-        n2 = f"{html.escape(str(m['p2_1']))} <span class='k-val'>+{m['k2_1']}</span><br>{html.escape(str(m['p2_2']))} <span class='k-val'>+{m['k2_2']}</span>"
+        n1 = f"{html.escape(str(m['p1_1']))} <span class='k-val'>{fmt_point(m['k1_1'])}đ</span><br>{html.escape(str(m['p1_2']))} <span class='k-val'>{fmt_point(m['k1_2'])}đ</span>"
+        n2 = f"{html.escape(str(m['p2_1']))} <span class='k-val'>{fmt_point(m['k2_1'])}đ</span><br>{html.escape(str(m['p2_2']))} <span class='k-val'>{fmt_point(m['k2_2'])}đ</span>"
         if t1win:
             n1 = "<span class='team-win-dot'></span><strong>" + n1 + "</strong>"
         else:
@@ -802,7 +819,10 @@ def render_podium(lb, value_col="Thắng", suffix="thắng"):
     for i, (_, r) in enumerate(top.iterrows()):
         card_cls = "podium-card first" if i == 0 else "podium-card"
         raw_value = float(r[value_col])
-        value_text = str(int(raw_value)) if raw_value.is_integer() else f"{raw_value:.1f}"
+        if value_col == "Điểm":
+            value_text = fmt_point(raw_value)
+        else:
+            value_text = str(int(raw_value)) if raw_value.is_integer() else f"{raw_value:.1f}"
         cards.append(
             f'<div class="{card_cls}">'
             f'<div class="place-badge">{i+1}</div>'
@@ -836,7 +856,7 @@ def render_ranking_table(lb):
             f'<td class="highlight-col">{int(r["Thắng"])}</td>'
             f'<td>{int(r["Tổng Trận"])}</td>'
             f'<td>{pct:.0f}%<div class="winbar"><span style="width:{pct:.0f}%"></span></div></td>'
-            f'<td>{int(r["Điểm"])}</td>'
+            f'<td>{fmt_point(r["Điểm"])}</td>'
             f'<td><div class="form-dots">{form}</div></td>'
             '</tr>'
         )
@@ -1295,7 +1315,7 @@ if page == "home":
 # BẢNG XẾP HẠNG
 # =========================================================
 elif page == "ranking":
-    st.markdown('<div class="page-kicker">Trận giao lưu</div><div class="page-title">Bảng xếp hạng</div><div class="page-subtitle">Xếp hạng theo thành tích trong từng mùa giải.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="page-kicker">Trận giao lưu</div><div class="page-title">Bảng xếp hạng</div><div class="page-subtitle">Đội thắng không cộng điểm; mỗi VĐV đội thua cộng số điểm đã đặt cho VĐV đó.</div>', unsafe_allow_html=True)
 
     seasons_list = [s["name"] for s in seasons_info]
     c1, c2 = st.columns([3.4, 1.2])
@@ -1367,36 +1387,36 @@ elif page == "admin":
                 with a1:
                     p1 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn VĐV...", key="add_p1")
                 with a2:
-                    k1_1 = st.number_input("Điểm", 0, 10, 1, key="add_k11")
+                    k1_1 = st.number_input("Điểm", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k11")
                 with a3:
                     score1 = st.number_input("Tỉ số", 0, 30, 21, key="add_s1")
                 b1, b2, _ = st.columns([2.2, 1, 1])
                 with b1:
                     p2 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn VĐV...", key="add_p2")
                 with b2:
-                    k1_2 = st.number_input("Điểm ", 0, 10, 1, key="add_k12")
+                    k1_2 = st.number_input("Điểm ", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k12")
 
                 st.markdown("**🔴 Đội 2**")
                 c1, c2, c3 = st.columns([2.2, 1, 1])
                 with c1:
                     p3 = st.selectbox("VĐV 1 ", members_list, index=None, placeholder="Chọn VĐV...", key="add_p3")
                 with c2:
-                    k2_1 = st.number_input("Điểm  ", 0, 10, 1, key="add_k21")
+                    k2_1 = st.number_input("Điểm  ", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k21")
                 with c3:
                     score2 = st.number_input("Tỉ số ", 0, 30, 19, key="add_s2")
                 d1, d2, _ = st.columns([2.2, 1, 1])
                 with d1:
                     p4 = st.selectbox("VĐV 2 ", members_list, index=None, placeholder="Chọn VĐV...", key="add_p4")
                 with d2:
-                    k2_2 = st.number_input("Điểm   ", 0, 10, 1, key="add_k22")
+                    k2_2 = st.number_input("Điểm   ", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k22")
                 video_input = st.text_input("Link video YouTube (tùy chọn)")
                 submitted = st.form_submit_button("💾 Lưu trận đấu", use_container_width=True, type="primary")
                 if submitted:
                     players = [p1, p2, p3, p4]
                     if not all(players):
                         st.error("Vui lòng chọn đủ 4 VĐV.")
-                    elif len(set(players)) < 4:
-                        st.error("Không được trùng VĐV.")
+                    elif len(set([x for x in players if x != "Giao lưu"])) < len([x for x in players if x != "Giao lưu"]):
+                        st.error("Không được trùng VĐV, ngoại trừ 'Giao lưu' có thể chọn nhiều vị trí.")
                     elif score1 == score2:
                         st.error("Tỉ số hai đội không được bằng nhau.")
                     else:
@@ -1410,14 +1430,14 @@ elif page == "admin":
                         new_match = {
                             "Ngày": m_date,
                             "Đội 1 - VĐV 1": p1,
-                            "Kèo 1_1": int(k1_1),
+                            "Kèo 1_1": float(k1_1),
                             "Đội 1 - VĐV 2": p2,
-                            "Kèo 1_2": int(k1_2),
+                            "Kèo 1_2": float(k1_2),
                             "Điểm Đội 1": int(score1),
                             "Đội 2 - VĐV 1": p3,
-                            "Kèo 2_1": int(k2_1),
+                            "Kèo 2_1": float(k2_1),
                             "Đội 2 - VĐV 2": p4,
-                            "Kèo 2_2": int(k2_2),
+                            "Kèo 2_2": float(k2_2),
                             "Điểm Đội 2": int(score2),
                             "Đội Thắng": "Đội 1" if score1 > score2 else "Đội 2",
                             "Video": video_input.strip(),
@@ -1444,33 +1464,38 @@ elif page == "admin":
                 with e1:
                     st.markdown("**🔵 Đội 1**")
                     ep11 = st.selectbox("VĐV 1", members_list, index=members_list.index(m["p1_1"]) if m["p1_1"] in members_list else 0, key="ep11")
+                    ek11 = st.number_input("Điểm VĐV 1", min_value=0.0, max_value=10.0, value=abs(float(m["k1_1"])), step=0.25, format="%.2f", key="ek11")
                     ep12 = st.selectbox("VĐV 2", members_list, index=members_list.index(m["p1_2"]) if m["p1_2"] in members_list else 0, key="ep12")
+                    ek12 = st.number_input("Điểm VĐV 2", min_value=0.0, max_value=10.0, value=abs(float(m["k1_2"])), step=0.25, format="%.2f", key="ek12")
                     es1 = st.number_input("Tỉ số đội 1", 0, 30, int(m["score1"]), key="es1")
                 with e2:
                     st.markdown("**🔴 Đội 2**")
                     ep21 = st.selectbox("VĐV 1 ", members_list, index=members_list.index(m["p2_1"]) if m["p2_1"] in members_list else 0, key="ep21")
+                    ek21 = st.number_input("Điểm VĐV 1 ", min_value=0.0, max_value=10.0, value=abs(float(m["k2_1"])), step=0.25, format="%.2f", key="ek21")
                     ep22 = st.selectbox("VĐV 2 ", members_list, index=members_list.index(m["p2_2"]) if m["p2_2"] in members_list else 0, key="ep22")
+                    ek22 = st.number_input("Điểm VĐV 2 ", min_value=0.0, max_value=10.0, value=abs(float(m["k2_2"])), step=0.25, format="%.2f", key="ek22")
                     es2 = st.number_input("Tỉ số đội 2", 0, 30, int(m["score2"]), key="es2")
                 evideo = st.text_input("Link video", value=str(m["video_url"] or ""))
                 save_edit = st.form_submit_button("💾 Lưu thay đổi", use_container_width=True, type="primary")
                 if save_edit:
                     players = [ep11, ep12, ep21, ep22]
-                    if len(set(players)) < 4:
-                        st.error("Không được trùng VĐV.")
+                    real_players = [x for x in players if x != "Giao lưu"]
+                    if len(set(real_players)) < len(real_players):
+                        st.error("Không được trùng VĐV, ngoại trừ 'Giao lưu' có thể chọn nhiều vị trí.")
                     elif es1 == es2:
                         st.error("Tỉ số không được bằng nhau.")
                     else:
                         updated = {
                             "Ngày": m["date"],
                             "Đội 1 - VĐV 1": ep11,
-                            "Kèo 1_1": int(m["k1_1"]),
+                            "Kèo 1_1": float(ek11),
                             "Đội 1 - VĐV 2": ep12,
-                            "Kèo 1_2": int(m["k1_2"]),
+                            "Kèo 1_2": float(ek12),
                             "Điểm Đội 1": int(es1),
                             "Đội 2 - VĐV 1": ep21,
-                            "Kèo 2_1": int(m["k2_1"]),
+                            "Kèo 2_1": float(ek21),
                             "Đội 2 - VĐV 2": ep22,
-                            "Kèo 2_2": int(m["k2_2"]),
+                            "Kèo 2_2": float(ek22),
                             "Điểm Đội 2": int(es2),
                             "Đội Thắng": "Đội 1" if es1 > es2 else "Đội 2",
                             "Video": evideo.strip(),

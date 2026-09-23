@@ -179,9 +179,18 @@ html,body,[data-testid="stAppViewContainer"],.main{
 
 /* Ranking table custom */
 .table-wrap{overflow-x:auto;border-top:1px solid transparent;}
-.hvb-table{width:100%;border-collapse:collapse;min-width:720px;font-size:.82rem;}
-.hvb-table th{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);font-weight:800;color:#111;white-space:nowrap;}
-.hvb-table td{padding:12px 13px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.hvb-table{width:100%;border-collapse:collapse;min-width:760px;font-size:.82rem;table-layout:fixed;}
+.hvb-table col.col-rank{width:64px;}
+.hvb-table col.col-member{width:150px;}
+.hvb-table col.col-match{width:76px;}
+.hvb-table col.col-win{width:76px;}
+.hvb-table col.col-point{width:82px;}
+.hvb-table col.col-rate{width:135px;}
+.hvb-table col.col-form{width:150px;}
+.hvb-table th{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);font-weight:800;color:#111;white-space:nowrap;}
+.hvb-table td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.hvb-table th:first-child,.hvb-table td:first-child{padding-left:8px;padding-right:6px;}
+.hvb-table th:nth-child(2),.hvb-table td:nth-child(2){padding-left:8px;padding-right:8px;}
 .hvb-table tr:hover td{background:#fbfcfd;}
 .rank-num{display:inline-flex;width:26px;height:26px;border-radius:6px;background:#aeb9c7;align-items:center;justify-content:center;font-weight:800;color:#203040;}
 .rank-num.r1{background:var(--gold);}.rank-num.r3{background:var(--bronze);color:#fff;}
@@ -190,6 +199,21 @@ html,body,[data-testid="stAppViewContainer"],.main{
 .highlight-col{background:#edf5f2!important;font-weight:800;text-align:right;}
 .winbar{height:3px;background:#dbe7e3;width:95px;position:relative;margin-top:5px;}.winbar span{display:block;height:100%;background:#08765a;}
 .form-dots{display:flex;gap:5px}.form-dot{width:20px;height:20px;border-radius:4px;background:#dfe4e9}.form-dot.win{background:#08765a}
+
+@media(max-width:768px){
+  .hvb-table{min-width:700px;font-size:.78rem;}
+  .hvb-table col.col-rank{width:54px;}
+  .hvb-table col.col-member{width:125px;}
+  .hvb-table col.col-match{width:66px;}
+  .hvb-table col.col-win{width:66px;}
+  .hvb-table col.col-point{width:72px;}
+  .hvb-table col.col-rate{width:122px;}
+  .hvb-table col.col-form{width:125px;}
+  .hvb-table th,.hvb-table td{padding:10px 8px;}
+  .rank-num{width:24px;height:24px;}
+  .winbar{width:78px;}
+  .form-dot{width:17px;height:17px;}
+}
 
 /* Member cards */
 .member-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-top:1.35rem;}
@@ -853,17 +877,21 @@ def render_ranking_table(lb):
             '<tr>'
             f'<td><span class="rank-num {rank_cls}">{i}</span></td>'
             f'<td><div class="member-cell">{html.escape(str(r["Tên VĐV"]))}</div></td>'
-            f'<td class="highlight-col">{int(r["Thắng"])}</td>'
             f'<td>{int(r["Tổng Trận"])}</td>'
+            f'<td>{int(r["Thắng"])}</td>'
+            f'<td class="highlight-col">{fmt_point(r["Điểm"])}</td>'
             f'<td>{pct:.0f}%<div class="winbar"><span style="width:{pct:.0f}%"></span></div></td>'
-            f'<td>{fmt_point(r["Điểm"])}</td>'
             f'<td><div class="form-dots">{form}</div></td>'
             '</tr>'
         )
         rows.append(row_html)
     table = (
         '<div class="table-wrap"><table class="hvb-table">'
-        '<thead><tr><th>Hạng</th><th>Thành viên</th><th>Thắng</th><th>Trận</th><th>Tỉ lệ</th><th>Điểm</th><th>Phong độ</th></tr></thead>'
+        '<colgroup>'
+        '<col class="col-rank"><col class="col-member"><col class="col-match">'
+        '<col class="col-win"><col class="col-point"><col class="col-rate"><col class="col-form">'
+        '</colgroup>'
+        '<thead><tr><th>Hạng</th><th>Thành viên</th><th>Trận</th><th>Thắng</th><th>Điểm</th><th>Tỉ lệ thắng</th><th>Phong độ</th></tr></thead>'
         f'<tbody>{"".join(rows)}</tbody>'
         '</table></div>'
     )
@@ -1329,17 +1357,31 @@ elif page == "ranking":
     curr_matches = season_matches(curr)
     lb_base = calculate_leaderboard(curr_matches)
 
-    metric = st.radio("Xếp theo", ["Trận thắng", "Số trận", "Tỉ lệ thắng", "Tổng điểm"], horizontal=True, label_visibility="collapsed", key="rank_metric")
-    map_col = {"Trận thắng": "Thắng", "Số trận": "Tổng Trận", "Tỉ lệ thắng": "% Thắng", "Tổng điểm": "Điểm"}
+    metric = st.radio(
+        "Xếp theo",
+        ["Tổng điểm", "Trận thắng", "Số trận"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="rank_metric",
+    )
+    map_col = {
+        "Tổng điểm": "Điểm",
+        "Trận thắng": "Thắng",
+        "Số trận": "Tổng Trận",
+    }
     col = map_col[metric]
+
+    # Điểm là điểm phạt của đội thua: điểm càng thấp càng xếp trên.
     ascending = metric == "Tổng điểm"
     if not lb_base.empty:
-        lb = lb_base.sort_values([col, "% Thắng", "Thắng"], ascending=[ascending, False, False]).reset_index(drop=True)
+        lb = lb_base.sort_values(
+            [col, "% Thắng", "Thắng"],
+            ascending=[ascending, False, False],
+        ).reset_index(drop=True)
     else:
         lb = lb_base
 
-    value_suffix = {"Trận thắng": "thắng", "Số trận": "trận", "Tỉ lệ thắng": "%", "Tổng điểm": "điểm"}[metric]
-    render_podium(lb, value_col=col, suffix=value_suffix)
+    # Bỏ cụm Top 3/podium để bảng xếp hạng gọn hơn.
     render_ranking_table(lb)
 
 # =========================================================

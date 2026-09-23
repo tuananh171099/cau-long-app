@@ -581,14 +581,14 @@ def parse_match_row(row):
     match_date = format_date_vn(raw_date)
     dt_obj = parse_date_obj(raw_date)
     p1_1 = str(get_val(row, "Đội 1 - VĐV 1", 1, "")).strip()
-    k1_1 = to_float(get_val(row, "Điểm 1_1", 2, get_val(row, "Kèo 1_1", 2, 0)), 0)
+    k1_1 = to_float(get_val(row, "Điểm 1_1", 2, get_val(row, "Kèo 1_1", 2, 1)), 1)
     p1_2 = str(get_val(row, "Đội 1 - VĐV 2", 3, "")).strip()
-    k1_2 = to_float(get_val(row, "Điểm 1_2", 4, get_val(row, "Kèo 1_2", 4, 0)), 0)
+    k1_2 = to_float(get_val(row, "Điểm 1_2", 4, get_val(row, "Kèo 1_2", 4, 1)), 1)
     score1 = to_int(get_val(row, "Điểm Đội 1", 5, 0), 0)
     p2_1 = str(get_val(row, "Đội 2 - VĐV 1", 6, "")).strip()
-    k2_1 = to_float(get_val(row, "Điểm 2_1", 7, get_val(row, "Kèo 2_1", 7, 0)), 0)
+    k2_1 = to_float(get_val(row, "Điểm 2_1", 7, get_val(row, "Kèo 2_1", 7, 1)), 1)
     p2_2 = str(get_val(row, "Đội 2 - VĐV 2", 8, "")).strip()
-    k2_2 = to_float(get_val(row, "Điểm 2_2", 9, get_val(row, "Kèo 2_2", 9, 0)), 0)
+    k2_2 = to_float(get_val(row, "Điểm 2_2", 9, get_val(row, "Kèo 2_2", 9, 1)), 1)
     score2 = to_int(get_val(row, "Điểm Đội 2", 10, 0), 0)
     winner = str(get_val(row, "Đội Thắng", 11, "")).strip()
     video_url = str(get_val(row, "Video", 12, "")).strip()
@@ -1387,28 +1387,28 @@ elif page == "admin":
                 with a1:
                     p1 = st.selectbox("VĐV 1", members_list, index=None, placeholder="Chọn VĐV...", key="add_p1")
                 with a2:
-                    k1_1 = st.number_input("Điểm", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k11")
+                    k1_1 = st.number_input("Điểm", min_value=0.0, max_value=10.0, value=1.0, step=0.25, format="%.2f", key="add_k11")
                 with a3:
                     score1 = st.number_input("Tỉ số", 0, 30, 21, key="add_s1")
                 b1, b2, _ = st.columns([2.2, 1, 1])
                 with b1:
                     p2 = st.selectbox("VĐV 2", members_list, index=None, placeholder="Chọn VĐV...", key="add_p2")
                 with b2:
-                    k1_2 = st.number_input("Điểm ", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k12")
+                    k1_2 = st.number_input("Điểm ", min_value=0.0, max_value=10.0, value=1.0, step=0.25, format="%.2f", key="add_k12")
 
                 st.markdown("**🔴 Đội 2**")
                 c1, c2, c3 = st.columns([2.2, 1, 1])
                 with c1:
                     p3 = st.selectbox("VĐV 1 ", members_list, index=None, placeholder="Chọn VĐV...", key="add_p3")
                 with c2:
-                    k2_1 = st.number_input("Điểm  ", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k21")
+                    k2_1 = st.number_input("Điểm  ", min_value=0.0, max_value=10.0, value=1.0, step=0.25, format="%.2f", key="add_k21")
                 with c3:
                     score2 = st.number_input("Tỉ số ", 0, 30, 19, key="add_s2")
                 d1, d2, _ = st.columns([2.2, 1, 1])
                 with d1:
                     p4 = st.selectbox("VĐV 2 ", members_list, index=None, placeholder="Chọn VĐV...", key="add_p4")
                 with d2:
-                    k2_2 = st.number_input("Điểm   ", min_value=0.0, max_value=10.0, value=0.5, step=0.25, format="%.2f", key="add_k22")
+                    k2_2 = st.number_input("Điểm   ", min_value=0.0, max_value=10.0, value=1.0, step=0.25, format="%.2f", key="add_k22")
                 video_input = st.text_input("Link video YouTube (tùy chọn)")
                 submitted = st.form_submit_button("💾 Lưu trận đấu", use_container_width=True, type="primary")
                 if submitted:

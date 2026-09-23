@@ -990,16 +990,16 @@ st.markdown(
   .st-key-hvb_nav_hitlayer{{display:none!important;}}
   .st-key-hvb_mobile_hitlayer{{
     display:block!important;position:fixed!important;z-index:100001!important;
-    bottom:0!important;left:0!important;right:0!important;height:62px!important;
-    margin:0!important;padding:5px 5px max(5px,env(safe-area-inset-bottom))!important;
+    top:52px!important;left:0!important;right:0!important;bottom:auto!important;height:48px!important;
+    margin:0!important;padding:4px 8px!important;
     pointer-events:none!important;
   }}
-  .st-key-hvb_mobile_hitlayer [data-testid="stHorizontalBlock"]{{height:52px!important;gap:0!important;margin:0!important;}}
-  .st-key-hvb_mobile_hitlayer [data-testid="stColumn"]{{height:52px!important;min-width:0!important;pointer-events:none!important;}}
+  .st-key-hvb_mobile_hitlayer [data-testid="stHorizontalBlock"]{{height:40px!important;gap:3px!important;margin:0!important;}}
+  .st-key-hvb_mobile_hitlayer [data-testid="stColumn"]{{height:40px!important;min-width:0!important;pointer-events:none!important;}}
   .st-key-hvb_mobile_hitlayer [data-testid="stElementContainer"]{{width:100%!important;margin:0!important;padding:0!important;pointer-events:none!important;}}
   .st-key-hvb_mobile_hitlayer .stButton{{width:100%!important;margin:0!important;pointer-events:auto!important;}}
   .st-key-hvb_mobile_hitlayer .stButton button{{
-    width:100%!important;height:52px!important;min-height:52px!important;
+    width:100%!important;height:40px!important;min-height:40px!important;
     opacity:0!important;background:transparent!important;border:0!important;box-shadow:none!important;
     padding:0!important;margin:0!important;cursor:pointer!important;color:transparent!important;
   }}
@@ -1096,16 +1096,87 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer
 }
 .hvb-admin:hover{background:#fff7ea!important;}
 @media(max-width:768px){
-  .main .block-container{padding-top:50px!important;padding-bottom:5.4rem!important;}
-  .hvb-nav{min-height:58px!important;padding:0 .82rem!important;}
-  .hvb-brand-name{font-size:.9rem!important;}
+  /* Header mobile gọn hơn */
+  .main .block-container{padding-top:104px!important;padding-bottom:1.1rem!important;}
+  .hvb-nav{min-height:52px!important;padding:0 .72rem!important;}
+  .hvb-logo{width:30px!important;height:30px!important;border-radius:8px!important;font-size:.66rem!important;}
+  .hvb-brand{gap:9px!important;}
+  .hvb-brand-name{font-size:.86rem!important;letter-spacing:0!important;}
+
+  /* Menu mobile kiểu segmented-control, đặt ngay dưới header */
+  .hvb-mobile-nav{
+    position:fixed!important;
+    top:52px!important;left:0!important;right:0!important;bottom:auto!important;
+    z-index:99998!important;
+    height:48px!important;
+    display:grid!important;
+    grid-template-columns:repeat(5,1fr)!important;
+    gap:3px!important;
+    padding:4px 8px!important;
+    background:rgba(255,255,255,.94)!important;
+    backdrop-filter:blur(16px)!important;
+    -webkit-backdrop-filter:blur(16px)!important;
+    border-top:none!important;
+    border-bottom:1px solid rgba(15,94,75,.10)!important;
+    box-shadow:0 5px 16px rgba(17,24,39,.05)!important;
+  }
+  .hvb-mobile-nav .hvb-mobile-link{
+    min-width:0!important;
+    height:40px!important;
+    color:#68747f!important;
+    font-size:.55rem!important;
+    line-height:1!important;
+    gap:1px!important;
+    border-radius:12px!important;
+    transition:background .15s ease,color .15s ease!important;
+  }
+  .hvb-mobile-nav .hvb-mobile-link>span{
+    font-size:.91rem!important;
+    line-height:.95!important;
+  }
+  .hvb-mobile-nav .hvb-mobile-link.active{
+    color:#075846!important;
+    background:#e8f3ef!important;
+    box-shadow:inset 0 0 0 1px rgba(7,107,85,.08)!important;
+  }
+
+  /* Hero sát menu hơn, không để khoảng trắng thừa */
+  .hero{margin-top:-2px!important;}
+
+  /* Ẩn các nút/toolbar nổi của Streamlit trên mobile */
+  [data-testid="stToolbar"],
+  [data-testid="stToolbarActions"],
+  [data-testid="stStatusWidget"],
+  [data-testid="stProfileMenu"],
+  [data-testid="stAppToolbar"],
+  [data-testid="stFloatingActionButton"],
+  [data-testid="stFloatingButtonContainer"],
+  [data-testid="stDeployButton"],
+  [data-testid="stShareButton"],
+  [data-testid="stActionButton"],
+  .stAppDeployButton,
+  button[title="Manage app"],
+  button[title="Deploy"],
+  button[title="Share this app"],
+  button[title="Open app menu"],
+  button[title="Settings"],
+  [aria-label="Manage app"],
+  [aria-label="Deploy"],
+  [aria-label="Share this app"],
+  [aria-label="Open app menu"],
+  a[href*="streamlit.io"]{
+    display:none!important;
+    visibility:hidden!important;
+    opacity:0!important;
+    pointer-events:none!important;
+  }
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-# V8.20 - Mobile hero refined: phần đầu dồn lên trên, desc xuống góc phải, ảnh rõ hơn
+# V8.23 - Mobile: header/nav gọn kiểu app + hero sát menu
 st.markdown(
     f"""
 <style>

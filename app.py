@@ -1330,6 +1330,286 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+# V8.24 - Hero giữ kích thước cố định trên desktop, không kéo ảnh theo màn hình lớn
+# Ảnh gốc CLUB_HERO_DATA_URI là 1345x1000; hero desktop giới hạn 1120px
+# để background chỉ bị thu nhỏ/cắt (cover), không bị phóng lớn gây mờ.
+st.markdown(
+    f"""
+<style>
+/* ===== HERO FIXED SIZE ===== */
+.hero-shell{{
+  width:100%!important;
+  display:flex!important;
+  justify-content:center!important;
+  margin:0 0 2rem 0!important;
+}}
+
+.hero{{
+  position:relative!important;
+  display:block!important;
+
+  /* Không cho hero nở theo màn hình lớn */
+  width:1120px!important;
+  max-width:100%!important;
+
+  /* Giữ đúng tỉ lệ khung mong muốn ~1120 x 410 */
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1120 / 410!important;
+
+  margin:0 auto!important;
+  border-radius:15px!important;
+  overflow:hidden!important;
+
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(3,52,42,.86) 0%,
+      rgba(3,52,42,.72) 30%,
+      rgba(3,52,42,.42) 54%,
+      rgba(3,52,42,.14) 78%,
+      rgba(3,52,42,.05) 100%
+    ),
+    url('{CLUB_HERO_DATA_URI}')!important;
+
+  background-size:cover!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+}}
+
+.hero-art{{
+  display:none!important;
+}}
+
+/* Chữ đặt trực tiếp trên ảnh - tỉ lệ giống khung hẹp/mobile */
+.hero-copy{{
+  position:absolute!important;
+  inset:0!important;
+
+  width:100%!important;
+  max-width:none!important;
+
+  padding:68px 48px 48px!important;
+  box-sizing:border-box!important;
+
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  align-items:flex-start!important;
+
+  background:transparent!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.28)!important;
+}}
+
+.hero-top{{
+  width:auto!important;
+  max-width:520px!important;
+}}
+
+.hero-kicker{{
+  font-size:.82rem!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+  margin:0 0 32px 0!important;
+}}
+
+.hero h1{{
+  display:block!important;
+  font-size:2.25rem!important;
+  line-height:1.08!important;
+  font-weight:650!important;
+  letter-spacing:-.025em!important;
+  margin:0 0 34px 0!important;
+}}
+
+.hero-bottom{{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:16px!important;
+}}
+
+.hero-stats{{
+  display:grid!important;
+  grid-template-columns:repeat(2,max-content)!important;
+  gap:42px!important;
+  width:auto!important;
+  align-items:end!important;
+}}
+
+.hero-stat-label{{
+  font-size:.73rem!important;
+  font-weight:750!important;
+  margin:0 0 6px 0!important;
+}}
+
+.hero-stat-value{{
+  font-size:2.8rem!important;
+  line-height:1!important;
+  font-weight:600!important;
+  letter-spacing:-.035em!important;
+}}
+
+.hero-stat-note{{
+  font-size:.68rem!important;
+  line-height:1.2!important;
+  margin-top:8px!important;
+  white-space:nowrap!important;
+}}
+
+.hero-desc{{
+  display:block!important;
+  max-width:560px!important;
+  font-size:.92rem!important;
+  line-height:1.5!important;
+  margin:0!important;
+}}
+
+/* Tablet: hero co theo màn hình nhưng không bao giờ vượt 1120px */
+@media(max-width:1160px){{
+  .hero-shell{{
+    padding:0!important;
+  }}
+
+  .hero{{
+    width:100%!important;
+    max-width:1120px!important;
+  }}
+
+  .hero-copy{{
+    padding:56px 44px 40px!important;
+  }}
+
+  .hero-kicker{{
+    margin-bottom:24px!important;
+  }}
+
+  .hero h1{{
+    margin-bottom:26px!important;
+    font-size:2.1rem!important;
+  }}
+
+  .hero-stat-value{{
+    font-size:2.55rem!important;
+  }}
+}}
+
+/* Mobile: giữ bố cục ảnh/chữ gọn, hero theo chiều rộng điện thoại */
+@media(max-width:768px){{
+  .hero-shell{{
+    margin-bottom:1rem!important;
+  }}
+
+  .hero{{
+    width:100%!important;
+    max-width:100%!important;
+    aspect-ratio:4 / 3!important;
+    border-radius:15px!important;
+
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(3,52,42,.62) 0%,
+        rgba(3,52,42,.38) 30%,
+        rgba(3,52,42,.13) 58%,
+        rgba(3,52,42,.01) 100%
+      ),
+      linear-gradient(
+        0deg,
+        rgba(3,52,42,.20) 0%,
+        rgba(3,52,42,.04) 55%,
+        rgba(3,52,42,0) 100%
+      ),
+      url('{CLUB_HERO_DATA_URI}')!important;
+
+    background-position:center center!important;
+  }}
+
+  .hero-copy{{
+    inset:0!important;
+    padding:18px 16px 16px!important;
+    justify-content:space-between!important;
+  }}
+
+  .hero-top{{
+    max-width:78%!important;
+  }}
+
+  .hero-kicker{{
+    font-size:.66rem!important;
+    line-height:1.1!important;
+    margin:0 0 8px 0!important;
+  }}
+
+  .hero h1{{
+    display:block!important;
+    font-size:1.72rem!important;
+    line-height:1.06!important;
+    margin:0!important;
+  }}
+
+  .hero-bottom{{
+    gap:9px!important;
+  }}
+
+  .hero-stats{{
+    grid-template-columns:repeat(2,max-content)!important;
+    gap:18px!important;
+  }}
+
+  .hero-stat-label{{
+    font-size:.57rem!important;
+    margin-bottom:2px!important;
+  }}
+
+  .hero-stat-value{{
+    font-size:1.55rem!important;
+  }}
+
+  .hero-stat-note{{
+    font-size:.51rem!important;
+    margin-top:4px!important;
+  }}
+
+  .hero-desc{{
+    font-size:.70rem!important;
+    line-height:1.4!important;
+    max-width:100%!important;
+  }}
+}}
+
+@media(max-width:390px){{
+  .hero-copy{{
+    padding:14px!important;
+  }}
+
+  .hero-top{{
+    max-width:80%!important;
+  }}
+
+  .hero h1{{
+    font-size:1.55rem!important;
+  }}
+
+  .hero-stat-value{{
+    font-size:1.42rem!important;
+  }}
+
+  .hero-stats{{
+    gap:14px!important;
+  }}
+
+  .hero-desc{{
+    font-size:.66rem!important;
+  }}
+}}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 # =========================================================
 # TRANG CHỦ
 # =========================================================
@@ -1346,8 +1626,9 @@ if page == "home":
     total_matches = len(curr_matches)
     st.markdown(
         f"""
-        <div class="hero">
-          <div class="hero-copy">
+        <div class="hero-shell">
+          <div class="hero">
+            <div class="hero-copy">
             <div class="hero-top">
               <div class="hero-kicker">CLB Cầu Lông HV BADMINTON</div>
               <h1>Bảng Xếp Hạng</h1>
@@ -1359,8 +1640,9 @@ if page == "home":
               </div>
               <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
             </div>
+            </div>
+            <div class="hero-art"></div>
           </div>
-          <div class="hero-art"></div>
         </div>
         <div class="summary-card">
           <div><div class="summary-label">Mùa hiện tại</div><div class="summary-main">{html.escape(curr['name'])}</div><div class="summary-meta">{html.escape(curr['status'] or 'Đang diễn ra')} · từ {html.escape(curr['start_str'])}</div></div>

@@ -1771,50 +1771,40 @@ if page == "home":
     total_matches = len(curr_matches)
 
     st.markdown(
-        f"""
-        <div class="hero-shell">
-          <div class="hero">
-            <div class="hero-copy">
-              <div class="hero-top">
-                <div class="hero-kicker">CLB Cầu Lông HV BADMINTON</div>
-                <h1>Bảng Xếp Hạng</h1>
-              </div>
-
-              <div class="hero-bottom">
-                <div class="hero-stats">
-                  <div>
-                    <div class="hero-stat-label">Trận</div>
-                    <div class="hero-stat-value">{total_matches}</div>
-                    <div class="hero-stat-note">{html.escape(curr['name'])}</div>
-                  </div>
-
-                  <div>
-                    <div class="hero-stat-label">Tổng điểm</div>
-                    <div class="hero-stat-value">{fmt_point(total_season_points)}</div>
-                    <div class="hero-stat-note">{html.escape(curr['name'])}</div>
-                  </div>
-                </div>
-
-                <div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
-              </div>
-            </div>
-
-            <div class="hero-art"></div>
-          </div>
-        </div>
-
-        <div class="summary-card">
-          <div>
-            <div class="summary-label">Mùa hiện tại</div>
-            <div class="summary-main">{html.escape(curr['name'])}</div>
-            <div class="summary-meta">{html.escape(curr['status'] or 'Đang diễn ra')} · từ {html.escape(curr['start_str'])}</div>
-          </div>
-
-          <a class="summary-link" target="_self" href="?page=ranking">
-            Xem bảng xếp hạng →
-          </a>
-        </div>
-        """,
+        f"""<div class="hero-shell">
+<div class="hero">
+<div class="hero-copy">
+<div class="hero-top">
+<div class="hero-kicker">CLB Cầu Lông HV BADMINTON</div>
+<h1>Bảng Xếp Hạng</h1>
+</div>
+<div class="hero-bottom">
+<div class="hero-stats">
+<div>
+<div class="hero-stat-label">Trận</div>
+<div class="hero-stat-value">{total_matches}</div>
+<div class="hero-stat-note">{html.escape(curr['name'])}</div>
+</div>
+<div>
+<div class="hero-stat-label">Tổng điểm</div>
+<div class="hero-stat-value">{fmt_point(total_season_points)}</div>
+<div class="hero-stat-note">{html.escape(curr['name'])}</div>
+</div>
+</div>
+<div class="hero-desc">Theo dõi bảng xếp hạng, trận đấu và phong độ thành viên.</div>
+</div>
+</div>
+<div class="hero-art"></div>
+</div>
+</div>
+<div class="summary-card">
+<div>
+<div class="summary-label">Mùa hiện tại</div>
+<div class="summary-main">{html.escape(curr['name'])}</div>
+<div class="summary-meta">{html.escape(curr['status'] or 'Đang diễn ra')} · từ {html.escape(curr['start_str'])}</div>
+</div>
+<a class="summary-link" target="_self" href="?page=ranking">Xem bảng xếp hạng →</a>
+</div>""",
         unsafe_allow_html=True,
     )
 
@@ -1831,24 +1821,11 @@ if page == "home":
     render_podium(lb_points, value_col="Điểm", suffix=" điểm")
 
     st.markdown(
-        """
-        <div class="quick-grid">
-          <a class="quick-card" target="_self" href="?page=ranking">
-            <div class="quick-title">🏆 Bảng xếp hạng</div>
-            <div class="quick-sub">Top thành viên và thống kê chi tiết</div>
-          </a>
-
-          <a class="quick-card" target="_self" href="?page=members">
-            <div class="quick-title">👥 Thành viên</div>
-            <div class="quick-sub">Danh sách và thành tích VĐV</div>
-          </a>
-
-          <a class="quick-card" target="_self" href="?page=admin">
-            <div class="quick-title">⚙️ Quản lý CLB</div>
-            <div class="quick-sub">Ghi trận và quản lý dữ liệu</div>
-          </a>
-        </div>
-        """,
+        """<div class="quick-grid">
+<a class="quick-card" target="_self" href="?page=ranking"><div class="quick-title">🏆 Bảng xếp hạng</div><div class="quick-sub">Top thành viên và thống kê chi tiết</div></a>
+<a class="quick-card" target="_self" href="?page=members"><div class="quick-title">👥 Thành viên</div><div class="quick-sub">Danh sách và thành tích VĐV</div></a>
+<a class="quick-card" target="_self" href="?page=admin"><div class="quick-title">⚙️ Quản lý CLB</div><div class="quick-sub">Ghi trận và quản lý dữ liệu</div></a>
+</div>""",
         unsafe_allow_html=True,
     )
 
